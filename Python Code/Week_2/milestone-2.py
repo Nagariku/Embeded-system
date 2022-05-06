@@ -2,7 +2,7 @@
 """
 Created on Tue May  3 14:28:13 2022
 
-@author: admin
+@author: nagariku
 """
 import time
 from rolab_tb.turtlebot import Turtlebot
