@@ -277,7 +277,8 @@ def reach_correct_angle_signal(set_angle):
 
     #deciding direction of angV
     if (prop_error ==0 or np.pi()):
-        return 0
+        turnRight = 1
+        #cause why not, no need to make it an RNG
     if (set_angle>np.pi()):
         bigOpposite = set_angle-np.pi()
         if (theta>bigOpposite and theta<set_angle):
@@ -380,8 +381,9 @@ def reachCoordinates_constantVel(input_x, input_y,constSpeed):
         if (relative_y>0):
             desired_angle = np.pi+np.arctan((relative_y)/(relative_x))
         elif (relative_y==0):
-            desired_angle = 0
-            constSpeed = -constSpeed
+            #desired_angle = 0
+            #constSpeed = -constSpeed
+            desired_angle = 2* np.pi()
         else:
             desired_angle = np.pi+np.arctan((relative_y)/(relative_x))
     else:
