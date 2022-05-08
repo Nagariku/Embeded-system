@@ -78,12 +78,12 @@ def get_current_theta():
 
 def get_xposition():
     global current_x
-    current_x = current_x + np.cos(theta)*(timeDif2)
+    current_x = current_x + forward_velocity*np.cos(theta)*(timeDif2)
     return current_x
 
 def get_yposition():
     global current_y
-    current_y = current_x + np.sin(theta)*(timeDif2)
+    current_y = current_x + forward_velocity*np.sin(theta)*(timeDif2)
     return current_y
 
 while robotRunning:
@@ -114,7 +114,7 @@ while robotRunning:
     rightTick = dataList['right']
     
     forward_velocity = get_linear_velocity() 
-    angular_velocity = get_angular_velocity() * 57.29 # from radians to degrees
+    angular_velocity = get_angular_velocity() #* 57.29 # from radians to degrees
     theta = get_current_theta()
     
     if loopCounter > 0:
