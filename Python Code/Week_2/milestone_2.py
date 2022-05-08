@@ -13,6 +13,8 @@ see if timedif and timedif2 are the same
 make spin in correct direction
 see about negative speed and it's impact on output signal 
 same for angular velocity
+Corentin:
+Limitation of current controller: cannot move linearly and turn simultaneously (see def reach_correct_speed(set_LinVel) and other)
 """
 
 from distutils.log import error
@@ -32,14 +34,32 @@ newTimeTick = False
 
 
 
-
-
 def tick_to_rad(val):
+    '''
+    Parameter:
+    Tick reading
+    -----
+    Action: 
+    Converts the encoders ticks into radians (multiplication factor provided)
+    -----
+    Returns: 
+    The radian equivalent
+    '''
     # 0.087890625[deg] * 3.14159265359 / 180 = 0.001533981f
     val = val * 0.001533981 # 2^12 = 4096 ticks/revolution
     return val
 
 def get_linear_velocity():
+    '''
+    Parameter:
+    None
+    -----
+    Action: 
+    Calculates from the tick reading and the recorded time the bot velocity
+    -----
+    Returns: 
+    The linear velocity of the platform center point (mid point between wheels)
+    '''
     if timeDif != 0:
         vl = tick_to_rad(leftTick - refTickLeft) * 0.066 * 0.5/timeDif
         vr = tick_to_rad(rightTick - refTickRight) * 0.066 * 0.5/timeDif
@@ -51,6 +71,16 @@ def get_linear_velocity():
     return linear_vel
 
 def get_angular_velocity():
+    '''
+    Parameter:
+    None
+    -----
+    Action: 
+    Calculates from the tick reading and the recorded time the bot velocity
+    -----
+    Returns: 
+    The linear velocity of the platform center point (mid point between wheels)
+    '''
     if timeDif != 0:
         
         vl = tick_to_rad(leftTick - refTickLeft) * 0.066 * 0.5/timeDif
@@ -62,7 +92,17 @@ def get_angular_velocity():
     
     return angu_vel
 
-def data_to_list(listToSave): 
+def data_to_list(listToSave):
+    '''
+    Parameter:
+    List to be extended
+    -----
+    Action: 
+    Appends the recieved list with the tick reading and the time passed since start of the robot
+    -----
+    Returns: 
+    The extended list
+    '''
     global timeDif2
     time2 = time.time()   
     timeDif = time2 - time1 
@@ -74,13 +114,22 @@ def data_to_list(listToSave):
         newTimeTick = True
     else:
         newTimeTick = False
-    
     listToSave.append(tb.get_encoder_thicks())
     listToSave.append(timeDif)
     
     return listToSave
 
 def get_current_theta():
+    '''
+    Parameter:
+    None
+    -----
+    Action: 
+    Calculates the theta angle the robot perfomed according to the reference frame (taken at the robot start position)
+    -----
+    Returns: 
+    The live theta angle
+    '''
     right_tick_relative = rightTick - refTickRight
     left_tick_relative = leftTick - refTickLeft
     difference = right_tick_relative - left_tick_relative
@@ -98,30 +147,70 @@ def get_current_theta():
     return theta
 
 def get_xposition():
+    '''
+    Parameter:
+    None
+    -----
+    Action: 
+    Calculates the live x coordinate of the robot from the linear velocity and the theta angle
+    -----
+    Returns: 
+    The x coordinate of the platform center point (mid point between wheels)
+    '''
     global current_x,change_x
     if newTimeTick == True:
-        change_x = forward_velocity*np.cos(theta)*(timeDif2)
+        change_x = forward_velocity*np.cos(theta)*(timeDif2) # error appearing when speed is not constant
         current_x = current_x + change_x
     else:
-        change_x=0
+        change_x = 0
     return current_x
 
 def get_yposition():
+    '''
+    Parameter:
+    None
+    -----
+    Action: 
+    Calculates the live y coordinate of the robot from the linear velocity and the theta angle
+    -----
+    Returns: 
+    The y coordinate of the platform center point (mid point between wheels)
+    '''
     global current_y,change_y
     if newTimeTick == True:
-        change_y = forward_velocity*np.sin(theta)*(timeDif2)
-        current_y = current_x + change_y
+        change_y = forward_velocity*np.sin(theta)*(timeDif2) # error appearing when speed is not constant
+        current_y = current_y + change_y
     else:
         change_y= 0
     return current_y
 
 def get_distance_moved():
-    global change_x, change_y
+    '''
+    Parameter:
+    None
+    -----
+    Action: 
+    Calculates distance traveled, adding the euclidian distance of the last change in position to the total traveled distance
+    -----
+    Returns: 
+    None
+    '''
+    global change_x, change_y # Unecessary, global is needed only when the variables are changed within the function
     #if newTimeTick == True:
-    distance_travelled = distance_travelled + np.sqrt(change_x^2 + change_y^2)
-    return
+    distance_travelled = distance_travelled + np.sqrt(change_x^2 + change_y^2) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
+    return None
 
 def reach_correct_speed(set_LinVel):
+    '''
+    Parameter:
+    The linear velocity set, aka velocity in the x axis (in the robot frame)
+    -----
+    Action: 
+    Sets the linear velocity, that is calculated from the determined error and the PID parameters
+    -----
+    Returns: 
+    None
+    '''
     global vLastErr, vErrSum
     #Compute all the working error variables
     prop_error = set_LinVel - forward_velocity
@@ -133,10 +222,20 @@ def reach_correct_speed(set_LinVel):
     vLastErr = error
     if (out_signal>0.22):
         out_signal = 0.215
-    tb.set_control_inputs(out_signal, 0) # set control input {lin-vel: 0.1, ang-vel:0}
-    return
+    tb.set_control_inputs(out_signal, 0) # set control input {lin-vel: out_signal, ang-vel:0}
+    return None
 
 def reach_correct_angle(set_angle):
+    '''
+    Parameter:
+    The angular velocity set, aka angular in the theta axis (in the robot frame)
+    -----
+    Action: 
+    Sets the angular velocity, that is calculated from the determined error and the PID parameters
+    -----
+    Returns: 
+    None
+    '''
     global aLastErr, aErrSum
     #Compute all the working error variables
     prop_error = set_angle - theta
@@ -148,10 +247,21 @@ def reach_correct_angle(set_angle):
     aLastErr = error
     if (out_signal>0.22):
         out_signal = 0.215
-    tb.set_control_inputs(0, out_signal) # set control input {lin-vel: 0.1, ang-vel:0}
-    return
+    tb.set_control_inputs(0, out_signal) # set control input {lin-vel: 0, ang-vel: out_signal}
+    return None
 
 def reach_correct_distance(set_distance):
+    '''
+    Parameter:
+    Target coordinate
+    -----
+    Action: 
+    ????????????
+    Corentin doesn't get its purpose, same as reach_correct_speed(set_LinVel)?
+    -----
+    Returns: 
+    None
+    '''
     global dLastErr, dErrSum
     #Compute all the working error variables
     prop_error = set_distance - distance_travelled
@@ -163,17 +273,37 @@ def reach_correct_distance(set_distance):
     dLastErr = error
     if (out_signal>0.22):
         out_signal = 0.215
-    tb.set_control_inputs(out_signal, 0) # set control input {lin-vel: 0.1, ang-vel:0}
-    return
+    tb.set_control_inputs(out_signal, 0) # set control input {lin-vel: out_signal, ang-vel:0}
+    return None
 
 def setVelTunings(input_Kp, input_Ki, input_Kd):
+    '''
+    Parameter:
+    The PID parameters for the velocity controller
+    -----
+    Action: 
+    Sets the PID parameters
+    -----
+    Returns: 
+    None
+    '''
     global vKp, vKi, vKd
     vKp = input_Kp
     vKi = input_Ki
     vKd = input_Kd
-    return    
+    return None
 
 def setAngleTunings(input_Kp, input_Ki, input_Kd):
+    '''
+    Parameter:
+    The PID parameters for the angular velocity controller
+    -----
+    Action: 
+    Sets the PID parameters
+    -----
+    Returns: 
+    None
+    '''
     global aKp, aKi, aKd
     aKp = input_Kp
     aKi = input_Ki
@@ -181,11 +311,21 @@ def setAngleTunings(input_Kp, input_Ki, input_Kd):
     return    
 
 def setDistanceTunings(input_Kp, input_Ki, input_Kd):
+    '''
+    Parameter:
+    The PID parameters for the ??? controller
+    -----
+    Action: 
+    Sets the PID parameters
+    -----
+    Returns: 
+    None
+    '''
     global dKp, dKi, dKd
     dKp = input_Kp
     dKi = input_Ki
     dKd = input_Kd
-    return        
+    return None       
 
 while robotRunning:
 
