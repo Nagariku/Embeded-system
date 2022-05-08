@@ -9,9 +9,14 @@ Created on Tue May  3 14:28:13 2022
 testing
 Possible need to get an average of last 10 values of angular velocity/forward velocity to calculate properly
 move some things to only work when ticks are happening 
-
+see if timedif and timedif2 are the same
+make spin in correct direction
+see about negative speed and it's impact on output signal 
+same for angular velocity
 """
 
+from distutils.log import error
+from glob import glob
 import time
 from turtle import distance
 from rolab_tb.turtlebot import Turtlebot
@@ -24,6 +29,8 @@ refTickLeft = None
 refTickRight = None
 timeDifArray = [0,0]
 newTimeTick = False
+
+
 
 
 
@@ -112,11 +119,73 @@ def get_distance_moved():
     global change_x, change_y
     #if newTimeTick == True:
     distance_travelled = distance_travelled + np.sqrt(change_x^2 + change_y^2)
+    return
 
-def reach_correct_speed(input_LinVel):
+def reach_correct_speed(set_LinVel):
+    global vLastErr, vErrSum
+    #Compute all the working error variables
+    prop_error = set_LinVel - forward_velocity
+    vErrSum = vErrSum + prop_error*timeDif2
+    errDer = (prop_error-lastErr)/timeDif2
+    #Compute PID Output
+    out_signal = vKp * prop_error + vKi * vErrSum + errDer*vKd
+    #Remember some variables for next time
+    vLastErr = error
+    if (out_signal>0.22):
+        out_signal = 0.215
+    tb.set_control_inputs(out_signal, 0) # set control input {lin-vel: 0.1, ang-vel:0}
+    return
 
-    corrected_linVel = input_LinVel- forward_velocity
-    tb.set_control_inputs(corrected_linVel, 0) # set control input {lin-vel: 0.1, ang-vel:0}
+def reach_correct_angle(set_angle):
+    global aLastErr, aErrSum
+    #Compute all the working error variables
+    prop_error = set_angle - theta
+    aErrSum = vErrSum + prop_error*timeDif2
+    errDer = (prop_error-lastErr)/timeDif2
+    #Compute PID Output
+    out_signal = aKp * prop_error + aKi * errSum + errDer*aKd
+    #Remember some variables for next time
+    aLastErr = error
+    if (out_signal>0.22):
+        out_signal = 0.215
+    tb.set_control_inputs(0, out_signal) # set control input {lin-vel: 0.1, ang-vel:0}
+    return
+
+def reach_correct_distance(set_distance):
+    global dLastErr, dErrSum
+    #Compute all the working error variables
+    prop_error = set_distance - distance_travelled
+    dErrSum = vErrSum + prop_error*timeDif2
+    errDer = (prop_error-lastErr)/timeDif2
+    #Compute PID Output
+    out_signal = aKp * prop_error + aKi * errSum + errDer*aKd
+    #Remember some variables for next time
+    dLastErr = error
+    if (out_signal>0.22):
+        out_signal = 0.215
+    tb.set_control_inputs(out_signal, 0) # set control input {lin-vel: 0.1, ang-vel:0}
+    return
+
+def setVelTunings(input_Kp, input_Ki, input_Kd):
+    global vKp, vKi, vKd
+    vKp = input_Kp
+    vKi = input_Ki
+    vKd = input_Kd
+    return    
+
+def setAngleTunings(input_Kp, input_Ki, input_Kd):
+    global aKp, aKi, aKd
+    aKp = input_Kp
+    aKi = input_Ki
+    aKd = input_Kd
+    return    
+
+def setDistanceTunings(input_Kp, input_Ki, input_Kd):
+    global dKp, dKi, dKd
+    dKp = input_Kp
+    dKi = input_Ki
+    dKd = input_Kd
+    return        
 
 while robotRunning:
 
@@ -135,12 +204,35 @@ while robotRunning:
         change_x= 0
         change_y = 0
 
+        vkp = 10
+        vki = 0
+        vkd = 0
+
+        #aKp = -10
+        aKi = 0
+        aKd = 0
+
+        dKp = -10
+        dKi = 0
+        dKd = 0
+
+        vErrSum = 0
+        vLastErr = 0
+
+        aErrSum = 0
+        aLstErr = 0
+
+        dErrSum = 0
+        dLastErr = 0
+
         distance_travelled =0
         
         refTickLeft = dataList['left']
         refTickRight = dataList['right']
         
         reach_correct_speed(0.04)
+        #reach_correct_speed(np.pi())
+        #reach_correct_distance(2)
         #tb.set_control_inputs(0.1, 0.1) # set control input {lin-vel: 0.1, ang-vel:0} 
         
     returnedList = []
