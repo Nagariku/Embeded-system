@@ -4,6 +4,12 @@ Created on Tue May  3 14:28:13 2022
 
 @author: nagariku
 """
+
+"""
+testing
+Possible need to get an average of last 10 values of angular velocity/forward velocity to calculate properly
+"""
+
 import time
 from rolab_tb.turtlebot import Turtlebot
 import numpy as np
@@ -14,7 +20,6 @@ loopCounter = 0
 refTickLeft = None
 refTickRight = None
 timeDifArray = [0,0]
-
 newTimeTick = False
 
 
@@ -46,7 +51,6 @@ def get_angular_velocity():
     
     return angu_vel
 
-def data_to_list(listToSave):
 def data_to_list(listToSave): 
     global timeDif2
     #global timedif2
