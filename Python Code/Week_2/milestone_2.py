@@ -72,11 +72,7 @@ def get_linear_velocity():
         linear_vel = (vr + vl)/2
         
     else:
-        linear_vel = 0
-
-    if newTimeTick ==True:
-        vDeadReckon.append(linear_vel)
-        vDeadReckon.pop(0)
+        linear_vel = 0      
         
     return linear_vel
 
@@ -122,6 +118,12 @@ def data_to_list(listToSave):
     timeDif2 = timeDifArray(1)-timeDifArray(0)
     if (timeDifArray(1)-timeDifArray(0))!=0:
         newTimeTick = True
+        vDeadReckon.append(linear_vel)
+        vDeadReckon.pop(0)
+        thetaDeadReckon.append(theta)
+        thetaDeadReckon.pop(0)
+        update_angle_total()
+        update_distance_moved()
     else:
         newTimeTick = False
     listToSave.append(tb.get_encoder_thicks())
@@ -141,7 +143,6 @@ def get_averagesVandAngle():
             return averageSpeed, 360+averageTheta,
     return averageSpeed, averageTheta
     
-
 def get_current_theta():
     '''
     Parameter:
@@ -165,9 +166,6 @@ def get_current_theta():
         theta = remainder*(-0.0181274) 
     else:
         theta = 0
-    if newTimeTick ==True:
-        thetaDeadReckon.append(theta)
-        thetaDeadReckon.pop(0)
     theta = theta/360*2*np.pi() #degrees to radians
     return theta
     
@@ -211,7 +209,7 @@ def get_yposition():
         change_y= 0
     return current_y
 
-def get_distance_moved():
+def update_distance_moved():
     '''
     Parameter:
     None
@@ -222,9 +220,17 @@ def get_distance_moved():
     Returns: 
     None
     '''
-    global change_x, change_y # Unecessary, global is needed only when the variables are changed within the function
-    #if newTimeTick == True:
     distance_travelled = distance_travelled + np.sqrt(change_x^2 + change_y^2) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
+    return None
+
+def update_angle_total():
+    global angle_total
+    if (max(thetaDeadReckon())-min(thetaDeadReckon))>100: # sensetivity
+        biggerTheta = -360+max(thetaDeadReckon)
+        smallerTheta = min(thetaDeadReckon)
+        angle_total = angle_total + smallerTheta - biggerTheta
+    else:
+        angle_total = angle_total + (max(thetaDeadReckon())-min(thetaDeadReckon)) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
     return None
 
 def reach_correct_speed(set_LinVel):
@@ -249,7 +255,7 @@ def reach_correct_speed(set_LinVel):
     vLastErr = error
     if (out_signal>0.22):
         out_signal = 0.215
-    tb.set_control_inputs(out_signal, 0) # set control input {lin-vel: out_signal, ang-vel:0}
+    #tb.set_control_inputs(out_signal, 0) # set control input {lin-vel: out_signal, ang-vel:0}
     return None
 
 def reach_correct_angle(set_angle):
@@ -278,6 +284,8 @@ def reach_correct_angle(set_angle):
     return None
 
 def reach_correct_distance(set_distance):
+
+
     '''
     Parameter:
     Target coordinate
@@ -295,12 +303,38 @@ def reach_correct_distance(set_distance):
     dErrSum = vErrSum + prop_error*timeDif2
     errDer = (prop_error-dLastErr)/timeDif2
     #Compute PID Output
-    out_signal = aKp * prop_error + aKi * dErrSum + errDer*aKd
+    out_signal = dKp * prop_error + dKi * dErrSum + errDer*dKd
     #Remember some variables for next time
     dLastErr = error
     if (out_signal>0.22):
         out_signal = 0.215
     tb.set_control_inputs(out_signal, 0) # set control input {lin-vel: out_signal, ang-vel:0}
+    return None
+
+def reach_correct_angle_total(set_angle_total):
+    '''
+    Parameter:
+    Target coordinate
+    -----
+    Action: 
+    ????????????
+    Corentin doesn't get its purpose, same as reach_correct_speed(set_LinVel)?
+    -----
+    Returns: 
+    None
+    '''
+    global aLastErr, aErrSum
+    #Compute all the working error variables
+    prop_error = set_angle_total - angle_total
+    aErrSum = aErrSum + prop_error*timeDif2
+    errDer = (prop_error-aLastErr)/timeDif2
+    #Compute PID Output
+    out_signal = aKp * prop_error + aKi * aErrSum + errDer*aKd
+    #Remember some variables for next time
+    aLastErr = error
+    if (out_signal>0.22):
+        out_signal = 0.215
+    tb.set_control_inputs(0, out_signal) # set control input {lin-vel: out_signal, ang-vel:0}
     return None
 
 def setVelTunings(input_Kp, input_Ki, input_Kd):
@@ -371,17 +405,19 @@ while robotRunning:
         change_x= 0
         change_y = 0
 
+
+
         vkp = 10
         vki = 0
         vkd = 0
 
-        aKp = -10
+        aKp = -0.5
         aKi = 0
         aKd = 0
 
-        dKp = -10
-        dKi = 0
-        dKd = 0
+        dKp = -1
+        dKi = 0.01
+        dKd = 0.0001
 
         vErrSum = 0
         vLastErr = 0
@@ -393,11 +429,19 @@ while robotRunning:
         dLastErr = 0
 
         distance_travelled =0
+        angle_total = 0
         
         refTickLeft = dataList['left']
         refTickRight = dataList['right']
         
-        reach_correct_speed(0.04)
+        #test1: do a 360
+        reach_correct_angle_total(360)
+        #test2: move 2m ACTIVATE INTEGRALS AND DERIVATIVES
+        #reach_correct_distance(2)
+
+
+
+        #reach_correct_speed(0.04)
         #reach_correct_speed(np.pi())
         #reach_correct_distance(2)
         #tb.set_control_inputs(0.1, 0.1) # set control input {lin-vel: 0.1, ang-vel:0} 
@@ -429,9 +473,19 @@ while robotRunning:
     #previousTimeDif = timeDif
     
     loopCounter += 1
-        
-    if timeDif > 5:
+
+
+    #basic turn off    
+    #if timeDif > 10:
+    #    robotRunning = False
+
+    #turn off SISO#1
+    if angle_total>362:
         robotRunning = False
+
+    #turn of SISO#2
+  #  if distance_travelled>2.03:
+  #      robotRunning = False    
         
 tb.stop()
         
