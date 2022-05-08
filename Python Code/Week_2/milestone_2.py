@@ -17,6 +17,8 @@ Corentin:
 Limitation of current controller: cannot move linearly and turn simultaneously (see def reach_correct_speed(set_LinVel) and other)
 
 just realised, if the speed is constant there are coordinates that cannot be achieved due to velocity and robot going in circles without more complex system
+
+2.84 max ang vel
 """
 
 from distutils.log import error
@@ -305,8 +307,8 @@ def reach_correct_angle_signal(set_angle):
     out_signal = aKp * prop_error + aKi * aErrSum + errDer*aKd
     #Remember some variables for next time
     aLastErr = error
-    if (out_signal>0.22):
-        out_signal = 0.215
+    if (out_signal>2.84):
+        out_signal = 2.795
     direct_adj_signal = out_signal*turnRight
     #tb.set_control_inputs(0, out_signal) # set control input {lin-vel: 0, ang-vel: out_signal}
     return out_signal
@@ -360,8 +362,8 @@ def reach_correct_angle_total(set_angle_total):
     out_signal = aKp * prop_error + aKi * aErrSum + errDer*aKd
     #Remember some variables for next time
     aLastErr = error
-    if (out_signal>0.22):
-        out_signal = 0.215
+    if (out_signal>2.84):
+        out_signal = 2.795
     tb.set_control_inputs(0, out_signal) # set control input {lin-vel: out_signal, ang-vel:0}
     return None
 
