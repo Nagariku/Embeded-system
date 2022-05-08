@@ -26,12 +26,17 @@ import numpy as np
 
 #The variables
 robotRunning = True
-loopCounter = 0
-refTickLeft = None
-refTickRight = None
-timeDifArray = [0,0]
 newTimeTick = False
 
+newTimeTick = False
+refTickLeft = None
+refTickRight = None
+
+timeDifArray = [0,0]
+thetaDeadReckon = [0,0]
+vDeadReckon = [0,0]
+
+loopCounter = 0
 
 
 def tick_to_rad(val):
@@ -60,6 +65,7 @@ def get_linear_velocity():
     Returns: 
     The linear velocity of the platform center point (mid point between wheels)
     '''
+    #global vDeadReckon
     if timeDif != 0:
         vl = tick_to_rad(leftTick - refTickLeft) * 0.066 * 0.5/timeDif
         vr = tick_to_rad(rightTick - refTickRight) * 0.066 * 0.5/timeDif
@@ -67,6 +73,10 @@ def get_linear_velocity():
         
     else:
         linear_vel = 0
+
+    if newTimeTick ==True:
+        vDeadReckon.append(linear_vel)
+        vDeadReckon.pop(0)
         
     return linear_vel
 
@@ -130,6 +140,7 @@ def get_current_theta():
     Returns: 
     The live theta angle
     '''
+    global thetaDeadReckon
     right_tick_relative = rightTick - refTickRight
     left_tick_relative = leftTick - refTickLeft
     difference = right_tick_relative - left_tick_relative
@@ -139,15 +150,16 @@ def get_current_theta():
     if difference < 0:
         remainder = (-difference) % (-19859)
         theta = remainder*(-0.0181274) 
-        
-    if difference == 0:
+    else:
         theta = 0
-
+    if newTimeTick ==True:
+        thetaDeadReckon.append(theta)
+        thetaDeadReckon.pop(0)
     theta = theta/360*2*np.pi() #degrees to radians
     return theta
 
 def get_xposition():
-    '''
+    ''' 
     Parameter:
     None
     -----
@@ -159,7 +171,9 @@ def get_xposition():
     '''
     global current_x,change_x
     if newTimeTick == True:
-        change_x = forward_velocity*np.cos(theta)*(timeDif2) # error appearing when speed is not constant
+        thetaAverageTick = thetaDeadReckon(1)-thetaDeadReckon(0)
+        vAverageTick = vAverageTick(1)-vAverageTick(0)
+        change_x = vAverageTick*np.cos(thetaAverageTick)*(timeDif2) # error appearing when speed is not constant
         current_x = current_x + change_x
     else:
         change_x = 0
@@ -178,7 +192,9 @@ def get_yposition():
     '''
     global current_y,change_y
     if newTimeTick == True:
-        change_y = forward_velocity*np.sin(theta)*(timeDif2) # error appearing when speed is not constant
+        thetaAverageTick = thetaDeadReckon(1)-thetaDeadReckon(0)
+        vAverageTick = vAverageTick(1)-vAverageTick(0)
+        change_y = vAverageTick*np.sin(thetaAverageTick)*(timeDif2) # error appearing when speed is not constant
         current_y = current_y + change_y
     else:
         change_y= 0
@@ -215,7 +231,7 @@ def reach_correct_speed(set_LinVel):
     #Compute all the working error variables
     prop_error = set_LinVel - forward_velocity
     vErrSum = vErrSum + prop_error*timeDif2
-    errDer = (prop_error-lastErr)/timeDif2
+    errDer = (prop_error-vLastErr)/timeDif2
     #Compute PID Output
     out_signal = vKp * prop_error + vKi * vErrSum + errDer*vKd
     #Remember some variables for next time
@@ -240,9 +256,9 @@ def reach_correct_angle(set_angle):
     #Compute all the working error variables
     prop_error = set_angle - theta
     aErrSum = vErrSum + prop_error*timeDif2
-    errDer = (prop_error-lastErr)/timeDif2
+    errDer = (prop_error-aLastErr)/timeDif2
     #Compute PID Output
-    out_signal = aKp * prop_error + aKi * errSum + errDer*aKd
+    out_signal = aKp * prop_error + aKi * aErrSum + errDer*aKd
     #Remember some variables for next time
     aLastErr = error
     if (out_signal>0.22):
@@ -266,9 +282,9 @@ def reach_correct_distance(set_distance):
     #Compute all the working error variables
     prop_error = set_distance - distance_travelled
     dErrSum = vErrSum + prop_error*timeDif2
-    errDer = (prop_error-lastErr)/timeDif2
+    errDer = (prop_error-dLastErr)/timeDif2
     #Compute PID Output
-    out_signal = aKp * prop_error + aKi * errSum + errDer*aKd
+    out_signal = aKp * prop_error + aKi * dErrSum + errDer*aKd
     #Remember some variables for next time
     dLastErr = error
     if (out_signal>0.22):
