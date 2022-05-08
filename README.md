@@ -1,4 +1,4 @@
 # Embeded system 
  Greg and Corentin
- And our epic journey rowards graduation
+ \nAnd our epic journey rowards graduation
  
