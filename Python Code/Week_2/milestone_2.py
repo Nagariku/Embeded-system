@@ -129,6 +129,19 @@ def data_to_list(listToSave):
     
     return listToSave
 
+def get_averagesVandAngle():
+    #correction to prevent negative angle fuckery
+    averageSpeed = (vDeadReckon(1)+vDeadReckon(0))/2
+    averageTheta = (thetaDeadReckon(1) + thetaDeadReckon(0))/2
+    if averageTheta >100:
+        biggerTheta = -360+max(thetaDeadReckon)
+        smallerTheta = min(thetaDeadReckon)
+        averageTheta = (biggerTheta + smallerTheta)/2
+        if averageTheta<0:
+            return averageSpeed, 360+averageTheta,
+    return averageSpeed, averageTheta
+    
+
 def get_current_theta():
     '''
     Parameter:
@@ -157,7 +170,7 @@ def get_current_theta():
         thetaDeadReckon.pop(0)
     theta = theta/360*2*np.pi() #degrees to radians
     return theta
-
+    
 def get_xposition():
     ''' 
     Parameter:
@@ -171,8 +184,7 @@ def get_xposition():
     '''
     global current_x,change_x
     if newTimeTick == True:
-        thetaAverageTick = thetaDeadReckon(1)-thetaDeadReckon(0)
-        vAverageTick = vAverageTick(1)-vAverageTick(0)
+        vAverageTick, thetaAverageTick = get_averagesVandAngle()
         change_x = vAverageTick*np.cos(thetaAverageTick)*(timeDif2) # error appearing when speed is not constant
         current_x = current_x + change_x
     else:
@@ -192,8 +204,7 @@ def get_yposition():
     '''
     global current_y,change_y
     if newTimeTick == True:
-        thetaAverageTick = thetaDeadReckon(1)-thetaDeadReckon(0)
-        vAverageTick = vAverageTick(1)-vAverageTick(0)
+        vAverageTick, thetaAverageTick = get_averagesVandAngle()
         change_y = vAverageTick*np.sin(thetaAverageTick)*(timeDif2) # error appearing when speed is not constant
         current_y = current_y + change_y
     else:
@@ -364,7 +375,7 @@ while robotRunning:
         vki = 0
         vkd = 0
 
-        #aKp = -10
+        aKp = -10
         aKi = 0
         aKd = 0
 
