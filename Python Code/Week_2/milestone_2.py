@@ -15,6 +15,7 @@ refTickLeft = None
 refTickRight = None
 timeDifArray = [0,0]
 
+newTimeTick = False
 
 
 def tick_to_rad(val):
@@ -46,15 +47,20 @@ def get_angular_velocity():
     return angu_vel
 
 def data_to_list(listToSave):
+def data_to_list(listToSave): 
     global timeDif2
-    global timedif2
+    #global timedif2
     time2 = time.time()   
     timeDif = time2 - time1 
   
     timeDifArray.append(timeDif)
     timeDifArray.pop(0)
     timeDif2 = timeDifArray(1)-timeDifArray(0)
-  
+    if (timeDifArray(1)-timeDifArray(0))!=0:
+        newTimeTick = True
+    else:
+        newTimeTick = False
+    
     listToSave.append(tb.get_encoder_thicks())
     listToSave.append(timeDif)
     
@@ -74,16 +80,19 @@ def get_current_theta():
     if difference == 0:
         theta = 0
 
+    theta = theta/360*2*np.pi() #degrees to radians
     return theta
 
 def get_xposition():
     global current_x
-    current_x = current_x + forward_velocity*np.cos(theta)*(timeDif2)
+    if newTimeTick == True:
+        current_x = current_x + forward_velocity*np.cos(theta)*(timeDif2)
     return current_x
 
 def get_yposition():
     global current_y
-    current_y = current_x + forward_velocity*np.sin(theta)*(timeDif2)
+    if newTimeTick == True:
+        current_y = current_x + forward_velocity*np.sin(theta)*(timeDif2)
     return current_y
 
 while robotRunning:
@@ -124,7 +133,7 @@ while robotRunning:
     if loopCounter % 5 == 0:
         print("Linear velocity: ", str(round(forward_velocity, 5)))
         print("Angular velicity: ", str(round(angular_velocity, 5)))
-        print("Angle: ", str(round(theta, 5)))
+        print("Angle: ", str(round(theta/2/np.pi*()*360, 5)))
         print("x position: ", str(round(x_position,5)))
         print("y position: ", str(round(y_position,5)))
             
@@ -137,6 +146,5 @@ while robotRunning:
         
 tb.stop()
         
-    
-    
+
     
