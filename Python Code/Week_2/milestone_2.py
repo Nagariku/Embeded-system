@@ -8,9 +8,12 @@ Created on Tue May  3 14:28:13 2022
 """
 testing
 Possible need to get an average of last 10 values of angular velocity/forward velocity to calculate properly
+move some things to only work when ticks are happening 
+
 """
 
 import time
+from turtle import distance
 from rolab_tb.turtlebot import Turtlebot
 import numpy as np
 
@@ -21,6 +24,7 @@ refTickLeft = None
 refTickRight = None
 timeDifArray = [0,0]
 newTimeTick = False
+
 
 
 def tick_to_rad(val):
@@ -53,7 +57,6 @@ def get_angular_velocity():
 
 def data_to_list(listToSave): 
     global timeDif2
-    #global timedif2
     time2 = time.time()   
     timeDif = time2 - time1 
   
@@ -88,16 +91,32 @@ def get_current_theta():
     return theta
 
 def get_xposition():
-    global current_x
+    global current_x,change_x
     if newTimeTick == True:
-        current_x = current_x + forward_velocity*np.cos(theta)*(timeDif2)
+        change_x = forward_velocity*np.cos(theta)*(timeDif2)
+        current_x = current_x + change_x
+    else:
+        change_x=0
     return current_x
 
 def get_yposition():
-    global current_y
+    global current_y,change_y
     if newTimeTick == True:
-        current_y = current_x + forward_velocity*np.sin(theta)*(timeDif2)
+        change_y = forward_velocity*np.sin(theta)*(timeDif2)
+        current_y = current_x + change_y
+    else:
+        change_y= 0
     return current_y
+
+def get_distance_moved():
+    global change_x, change_y
+    #if newTimeTick == True:
+    distance_travelled = distance_travelled + np.sqrt(change_x^2 + change_y^2)
+
+def reach_correct_speed(input_LinVel):
+
+    corrected_linVel = input_LinVel- forward_velocity
+    tb.set_control_inputs(corrected_linVel, 0) # set control input {lin-vel: 0.1, ang-vel:0}
 
 while robotRunning:
 
@@ -112,11 +131,17 @@ while robotRunning:
         
         current_x = 0
         current_y = 0
+
+        change_x= 0
+        change_y = 0
+
+        distance_travelled =0
         
         refTickLeft = dataList['left']
         refTickRight = dataList['right']
         
-        tb.set_control_inputs(0.1, 0.1) # set control input {lin-vel: 0.1, ang-vel:0} 
+        reach_correct_speed(0.04)
+        #tb.set_control_inputs(0.1, 0.1) # set control input {lin-vel: 0.1, ang-vel:0} 
         
     returnedList = []
     returnedList = data_to_list(returnedList)
@@ -128,6 +153,7 @@ while robotRunning:
     
     forward_velocity = get_linear_velocity() 
     angular_velocity = get_angular_velocity() #* 57.29 # from radians to degrees
+    distance_travelled = get_distance_moved()
     theta = get_current_theta()
     
     if loopCounter > 0:
