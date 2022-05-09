@@ -36,12 +36,7 @@ timeDifArray = [0,0]
 thetaDeadReckon = [0,0]
 vDeadReckon = [0,0]
 
-<<<<<<< HEAD
 loopCounter = 1
-=======
-loopCounter = 0
->>>>>>> 7f8a0cd7c3f3a703111b8a95d8e91ef341ec0172
-
 
 def tick_to_rad(val):
     '''
