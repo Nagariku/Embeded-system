@@ -354,13 +354,8 @@ def setDistanceTunings(input_Kp, input_Ki, input_Kd):
     return None       
 
 while robotRunning:
-
-<<<<<<< HEAD
-    if loopCounter == 1:
-        
-=======
     if loopCounter == 0:
->>>>>>> 7f8a0cd7c3f3a703111b8a95d8e91ef341ec0172
+
         returnedList = []
         tb = Turtlebot() 
         time1 = time.time()
