@@ -319,6 +319,116 @@ def reach_correct_distance(set_distance):
     tb.set_control_inputs(out_signal, 0) # set control input {lin-vel: out_signal, ang-vel:0}
     return None
 
+def reach_correct_angle_total(set_angle_total):
+    '''
+    Parameter:
+    Target coordinate
+    -----
+    Action: 
+    ????????????
+    Corentin doesn't get its purpose, same as reach_correct_speed(set_LinVel)?
+    -----
+    Returns: 
+    None
+    '''
+    global aLastErr, aErrSum
+    #Compute all the working error variables
+    prop_error = set_angle_total - angle_total
+    aErrSum = aErrSum + prop_error*timeDif2
+    errDer = (prop_error-aLastErr)/timeDif2
+    #Compute PID Output
+    out_signal = aKp * prop_error + aKi * aErrSum + errDer*aKd
+    #Remember some variables for next time
+    aLastErr = error
+    if (out_signal>2.84):
+        out_signal = 2.795
+    tb.set_control_inputs(0, out_signal) # set control input {lin-vel: out_signal, ang-vel:0}
+    # MAKE IT STOP ON TIME
+    return None
+
+def reach_correct_angle_signal(set_angle):
+    '''
+    Parameter:
+    The angular velocity set, aka angular in the theta axis (in the robot frame)
+    -----
+    Action: 
+    Sets the angular velocity, that is calculated from the determined error and the PID parameters
+    -----
+    Returns: 
+    None
+    '''
+    global aLastErr, aErrSum
+    #Compute all the working error variables
+    prop_error = set_angle - theta
+
+    #deciding direction of angV
+    if (prop_error ==0 or np.pi):
+        turnRight = 1
+        #cause why not, no need to make it an RNG
+    if (set_angle>np.pi):
+        bigOpposite = set_angle-np.pi
+        if (theta>bigOpposite and theta<set_angle):
+            turnRight = 1
+        else:
+            turnRight = -1
+    else:
+        smallOpposite = set_angle + np.pi
+        if (theta>set_angle and theta<smallOpposite):
+            turnRight = -1
+        else:
+            turnRight= 1
+
+    if prop_error > np.pi:
+        correct_prop_error = 2*np.pi-prop_error
+    if prop_error < 0:
+        correct_prop_error = 2*np.pi+prop_error
+
+
+
+    aErrSum = aErrSum + prop_error*timeDif2
+    errDer = (prop_error-aLastErr)/timeDif2
+    #Compute PID Output
+    out_signal = aKp * prop_error + aKi * aErrSum + errDer*aKd
+    #Remember some variables for next time
+    aLastErr = error
+    if (out_signal>2.84):
+        out_signal = 2.795
+    direct_adj_signal = out_signal*turnRight
+    #tb.set_control_inputs(0, out_signal) # set control input {lin-vel: 0, ang-vel: out_signal}
+    return out_signal
+
+def reachCoordinates_constantVel(input_x, input_y,constSpeed):
+    #determination of direction
+    global relative_x, relative_y
+    relative_x = input_x - current_x
+    relative_y = input_y - current_y
+    if (relative_x>0):
+        if (relative_y>0):    
+            desired_angle = np.arctan((relative_y)/(relative_x))
+        elif (relative_y==0):
+            desired_angle = 0
+        else:
+            desired_angle = 2*np.pi+np.arctan((relative_y)/(relative_x))
+    elif (relative_x<0):
+        if (relative_y>0):
+            desired_angle = np.pi+np.arctan((relative_y)/(relative_x))
+        elif (relative_y==0):
+            #desired_angle = 0
+            #constSpeed = -constSpeed
+            desired_angle = 2* np.pi
+        else:
+            desired_angle = np.pi+np.arctan((relative_y)/(relative_x))
+    else:
+        if (relative_y>0):
+            desired_angle = np.pi/2
+        elif (relative_y==0):
+            robotRunning = False
+        else:
+            desired_angle = np.pi
+    theta_output = reach_correct_angle_signal(desired_angle)
+    tb.set_control_inputs(constSpeed, theta_output) # set control input {lin-vel: 0, ang-vel: out_signal}
+    return
+
 def setVelTunings(input_Kp, input_Ki, input_Kd):
     '''
     Parameter:
@@ -416,7 +526,17 @@ while robotRunning:
         refTickLeft = dataList['left']
         refTickRight = dataList['right']
         
-        reach_correct_speed(0.05)
+
+        #test1: do a 360
+        #reach_correct_angle_total(360)
+        #test2: move 2m ACTIVATE INTEGRALS AND DERIVATIVES
+        #reach_correct_distance(2)
+        
+        #test3: go [1,1]
+        #reachCoordinates_constantVel(1, 1, 0.05)
+
+
+        #reach_correct_speed(0.05)
         #reach_correct_angle(np.pi*3/2)
         #reach_correct_distance(2)
         #tb.set_control_inputs(0.1, 0.1) # set control input {lin-vel: 0.1, ang-vel:0} 
@@ -453,8 +573,20 @@ while robotRunning:
     
     loopCounter += 1
         
-    if timeDif > 60:
+    #basic turn off    
+    if timeDif > 10:
         robotRunning = False
+
+    #turn off SISO#1
+    #if angle_total>362:
+        #robotRunning = False
+
+    #turn off SISO#2
+  #  if distance_travelled>2.03:
+  #      robotRunning = False 
+    #turn of SISO#3
+    #if (np.mod(relative_x)<0.025 and np.mod(relative_y)<0.025):
+      #  robotRunning = False    
         
 tb.stop()
         
