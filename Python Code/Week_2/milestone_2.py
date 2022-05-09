@@ -18,9 +18,7 @@ Limitation of current controller: cannot move linearly and turn simultaneously (
 """
 
 from distutils.log import error
-from glob import glob
 import time
-from turtle import distance
 from rolab_tb.turtlebot import Turtlebot
 import numpy as np
 
@@ -37,6 +35,7 @@ thetaDeadReckon = [0,0]
 vDeadReckon = [0,0]
 
 loopCounter = 0
+
 
 
 def tick_to_rad(val):
@@ -172,7 +171,7 @@ def get_xposition():
     global current_x,change_x
     if newTimeTick == True:
         thetaAverageTick = thetaDeadReckon(1)-thetaDeadReckon(0)
-        vAverageTick = vAverageTick(1)-vAverageTick(0)
+        vAverageTick = vDeadReckon(1)-vDeadReckon(0)
         change_x = vAverageTick*np.cos(thetaAverageTick)*(timeDif2) # error appearing when speed is not constant
         current_x = current_x + change_x
     else:
@@ -193,7 +192,7 @@ def get_yposition():
     global current_y,change_y
     if newTimeTick == True:
         thetaAverageTick = thetaDeadReckon(1)-thetaDeadReckon(0)
-        vAverageTick = vAverageTick(1)-vAverageTick(0)
+        vAverageTick = vDeadReckon(1)-vDeadReckon(0)
         change_y = vAverageTick*np.sin(thetaAverageTick)*(timeDif2) # error appearing when speed is not constant
         current_y = current_y + change_y
     else:
@@ -211,7 +210,7 @@ def get_distance_moved():
     Returns: 
     None
     '''
-    global change_x, change_y # Unecessary, global is needed only when the variables are changed within the function
+    global change_x, change_y, distance_travelled # Unecessary, global is needed only when the variables are changed within the function
     #if newTimeTick == True:
     distance_travelled = distance_travelled + np.sqrt(change_x^2 + change_y^2) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
     return None
