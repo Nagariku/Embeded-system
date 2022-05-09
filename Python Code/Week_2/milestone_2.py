@@ -558,9 +558,6 @@ while robotRunning:
     if loopCounter > 0:
         x_position = get_xposition()
         y_position = get_yposition()
-    else:
-        x_position =0
-        y_position = 0
     
     if loopCounter % 500 == 0:
         print("\nLinear velocity: ", str(round(forward_velocity, 5)))
