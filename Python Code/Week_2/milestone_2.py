@@ -68,15 +68,9 @@ def get_linear_velocity():
     if timeDif != 0:
         vl = tick_to_rad(leftTick - refTickLeft) * 0.066 * 0.5/timeDif
         vr = tick_to_rad(rightTick - refTickRight) * 0.066 * 0.5/timeDif
-        linear_vel = (vr + vl)/2
-        
+        linear_vel = (vr + vl)/2 
     else:
         linear_vel = 0
-
-    if newTimeTick ==True:
-        vDeadReckon.append(linear_vel)
-        vDeadReckon.pop(0)
-        
     return linear_vel
 
 def get_angular_velocity():
@@ -121,6 +115,12 @@ def data_to_list(listToSave):
     timeDif2 = timeDifArray[1]-timeDifArray[0]
     if (timeDifArray[1]-timeDifArray[0])!=0:
         newTimeTick = True
+        vDeadReckon.append(linear_vel)
+        vDeadReckon.pop(0)
+        thetaDeadReckon.append(theta)
+        thetaDeadReckon.pop(0)
+        update_angle_total()
+        update_distance_moved()
     else:
         newTimeTick = False
     listToSave.append(tb.get_encoder_ticks())
@@ -153,12 +153,19 @@ def get_current_theta():
         theta = theta/360*2*np.pi #degrees to radians
     else:
         theta = 0
-        
-    if newTimeTick ==True:
-        thetaDeadReckon.append(theta)
-        thetaDeadReckon.pop(0)
-    
     return theta
+
+def get_averagesVandAngle():
+    #correction to prevent negative angle fuckery
+    averageSpeed = (vDeadReckon[1]+vDeadReckon[0])/2
+    averageTheta = (thetaDeadReckon[1] + thetaDeadReckon[0])/2
+    if averageTheta >100:
+        biggerTheta = -360+max(thetaDeadReckon)
+        smallerTheta = min(thetaDeadReckon)
+        averageTheta = (biggerTheta + smallerTheta)/2
+        if averageTheta<0:
+            return averageSpeed, 360+averageTheta,
+    return averageSpeed, averageTheta
 
 def get_xposition():
     ''' 
@@ -173,8 +180,7 @@ def get_xposition():
     '''
     global current_x,change_x
     if newTimeTick == True:
-        thetaAverageTick = thetaDeadReckon[1]-thetaDeadReckon[0]
-        vAverageTick = vDeadReckon[1]-vDeadReckon[0]
+        vAverageTick, thetaAverageTick = get_averagesVandAngle()
         change_x = vAverageTick*np.cos(thetaAverageTick)*(timeDif2) # error appearing when speed is not constant
         current_x = current_x + change_x
     else:
@@ -194,8 +200,7 @@ def get_yposition():
     '''
     global current_y,change_y
     if newTimeTick == True:
-        thetaAverageTick = thetaDeadReckon[1]-thetaDeadReckon[0]
-        vAverageTick = vDeadReckon[1]-vDeadReckon[0]
+        vAverageTick, thetaAverageTick = get_averagesVandAngle()
         change_y = vAverageTick*np.sin(thetaAverageTick)*(timeDif2) # error appearing when speed is not constant
         current_y = current_y + change_y
     else:
