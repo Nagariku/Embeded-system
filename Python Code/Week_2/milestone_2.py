@@ -35,7 +35,7 @@ thetaDeadReckon = [0,0]
 vDeadReckon = [0,0]
 
 loopCounter = 0
-
+printCount = 0
 
 
 def tick_to_rad(val):
@@ -359,6 +359,7 @@ def setDistanceTunings(input_Kp, input_Ki, input_Kd):
 while robotRunning:
 
     if loopCounter == 0:
+        
         returnedList = []
         tb = Turtlebot() 
         time1 = time.time()
@@ -373,9 +374,9 @@ while robotRunning:
         change_x= 0
         change_y = 0
 
-        vKp = 1.2
-        vKi = 2.85
-        vKd = 0.126
+        vKp = 2
+        vKi = 0#2.85
+        vKd = 0
 
         aKp = 0.1
         aKi = 0
@@ -427,18 +428,21 @@ while robotRunning:
         x_position =0
         y_position = 0
     
-    if loopCounter % 500 == 0:
+    
+    if loopCounter == printCount *1000:
         print("\nLinear velocity: ", str(round(forward_velocity, 5)))
         print("Angular velicity: ", str(round(angular_velocity, 5)))
         print("Angle: ", str(round(theta/2/np.pi*360, 5)))
         print("x position: ", str(round(x_position,5)))
         print("y position: ", str(round(y_position,5)))
+        printCount += 1
+        
             
     #previousTimeDif = timeDif
     
     loopCounter += 1
         
-    if timeDif > 60:
+    if timeDif > 120:
         robotRunning = False
         
 tb.stop()
