@@ -206,7 +206,45 @@ def get_yposition():
     else:
         change_y= 0
     return current_y
-  
+
+def get_distance_to_coordinate(listCoordsInput):
+    deltaX=current_x - listCoordsInput[0]
+    deltaY= current_y - listCoordsInput[1]
+    totDist = np.sqrt(deltaY**2+deltaX**2)
+    return totDist
+
+def get_distance_to_wall():
+    return wall_y_coordinate-current_y
+
+def get_angle_to_next_coord(coord_x,coord_y):
+    relative_x = coord_x - current_x
+    relative_y = coord_y - current_y
+    if (relative_x>0):
+        if (relative_y>0):    
+            desired_angle = np.arctan((relative_y)/(relative_x))
+        elif (relative_y==0):
+            desired_angle = 0
+        else:
+            desired_angle = 2*np.pi+np.arctan((relative_y)/(relative_x))
+    elif (relative_x<0):
+        if (relative_y>0):
+            desired_angle = np.pi+np.arctan((relative_y)/(relative_x))
+        elif (relative_y==0):
+            #desired_angle = 0
+            #constSpeed = -constSpeed
+            desired_angle = 2* np.pi
+        else:
+            desired_angle = np.pi+np.arctan((relative_y)/(relative_x))
+    else:
+        if (relative_y>0):
+            desired_angle = np.pi/2
+        elif (relative_y==0):
+            robotRunning = False
+        else:
+            desired_angle = np.pi
+    return desired_angle
+
+
 def update_distance_moved():
     '''
     Parameter:
@@ -221,16 +259,6 @@ def update_distance_moved():
     global distance_travelled # Unecessary, global is needed only when the variables are changed within the function
     if (newTimeTick == True and (change_x!=0 or change_y!=0)):
         distance_travelled = distance_travelled + np.sqrt(change_x**2 + change_y**2) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
-    return None
-
-def update_angle_total():
-    global angle_total
-    if (max(thetaDeadReckon())-min(thetaDeadReckon))>1: # sensetivity
-        biggerTheta = -2*np.pi+max(thetaDeadReckon)
-        smallerTheta = min(thetaDeadReckon)
-        angle_total = angle_total + smallerTheta - biggerTheta
-    else:
-        angle_total = angle_total + (max(thetaDeadReckon())-min(thetaDeadReckon)) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
     return None
 
 def update_angle_total():
@@ -293,9 +321,9 @@ def reach_correct_angle(set_angle):
     #Remember some variables for next time
     aLastErr = prop_error
     if (out_signal>2.7):
-        out_signal = 2.65 - out_signal
+        out_signal = 2.65 
     if (out_signal<-2.75):
-        out_signal = -2.65 - out_signal
+        out_signal = -2.65 
     #if (out_signal>2.8):
      #   out_signal = 2.75
     tb.set_control_inputs(0, out_signal) # set control input {lin-vel: 0, ang-vel: out_signal}
@@ -400,43 +428,50 @@ def reach_correct_angle_signal(set_angle):
     out_signal = aKp * prop_error + aKi * aErrSum + errDer*aKd
     #Remember some variables for next time
     aLastErr = error
-    if (out_signal>2.84):
-        out_signal = 2.795
+    if (out_signal>2.7):
+        out_signal = 2.65 
+    if (out_signal<-2.75):
+        out_signal = -2.65 
     direct_adj_signal = out_signal*turnRight
     #tb.set_control_inputs(0, out_signal) # set control input {lin-vel: 0, ang-vel: out_signal}
     return out_signal
 
 def reachCoordinates_constantVel(input_x, input_y,constSpeed):
     #determination of direction
-    global relative_x, relative_y
-    relative_x = input_x - current_x
-    relative_y = input_y - current_y
-    if (relative_x>0):
-        if (relative_y>0):    
-            desired_angle = np.arctan((relative_y)/(relative_x))
-        elif (relative_y==0):
-            desired_angle = 0
-        else:
-            desired_angle = 2*np.pi+np.arctan((relative_y)/(relative_x))
-    elif (relative_x<0):
-        if (relative_y>0):
-            desired_angle = np.pi+np.arctan((relative_y)/(relative_x))
-        elif (relative_y==0):
-            #desired_angle = 0
-            #constSpeed = -constSpeed
-            desired_angle = 2* np.pi
-        else:
-            desired_angle = np.pi+np.arctan((relative_y)/(relative_x))
-    else:
-        if (relative_y>0):
-            desired_angle = np.pi/2
-        elif (relative_y==0):
-            robotRunning = False
-        else:
-            desired_angle = np.pi
+    #global relative_x, relative_y
+    desired_angle_func = get_angle_to_next_coord(input_x, input_y)
     theta_output = reach_correct_angle_signal(desired_angle)
     tb.set_control_inputs(constSpeed, theta_output) # set control input {lin-vel: 0, ang-vel: out_signal}
     return
+
+def reach_following_coordinates(coordinateList):
+    #infinnite loop of following
+    # case 1 = normal movement
+    # case 2 = turn in 1 place
+    # case 3 = fast turn + slow down   
+    while timeDif < 180:
+        #update current list
+        if (loopCounter ==0 or targetTReached == True):
+            current_target = coordinateList[0]
+            coordinateList.append(current_target)
+            coordinateList.pop(0)
+            targetting_angle = get_angle_to_next_coord(current_target[0], current_target[1])
+            targetTReached = False
+
+        if (abs(targetting_angle)< np.pi/4):
+            #caseNum = 1
+            reachCoordinates_constantVel(current_target[0], current_target[1], 0.07)
+        elif (abs(targetting_angle)< np.pi/2):
+            #caseNum = 2
+            reachCoordinates_constantVel(current_target[0], current_target[1], 0.03)
+        else:
+            #caseNum = 3
+            reach_correct_angle(targetting_angle)
+
+        if (get_distance_to_coordinate(current_target)<0.07):
+            targetTReached = True
+        
+    return None
 
 def setVelTunings(input_Kp, input_Ki, input_Kd):
     '''
@@ -506,6 +541,8 @@ while robotRunning:
         change_x= 0
         change_y = 0
 
+        wall_y_coordinate = 1.75
+
         vKp = 1.2
         vKi = 2.85
         vKd = 0.126
@@ -535,7 +572,6 @@ while robotRunning:
         refTickLeft = dataList['left']
         refTickRight = dataList['right']
         
-
         #test1: do a 360
         #reach_correct_angle_total(360)
         #test2: move 2m ACTIVATE INTEGRALS AND DERIVATIVES
@@ -544,10 +580,13 @@ while robotRunning:
         #test3: go [1,1]
         #reachCoordinates_constantVel(1, 1, 0.05)
 
-
         #reach_correct_speed(0.05)
         #reach_correct_angle(np.pi*3/2)
         #reach_correct_distance(2)
+
+        #MIMO test
+        reach_following_coordinates([0,1],[2,1],[0,0])
+
         #tb.set_control_inputs(0.1, 0.1) # set control input {lin-vel: 0.1, ang-vel:0} 
         
     returnedList = []
@@ -563,6 +602,7 @@ while robotRunning:
     update_distance_moved()
     update_angle_total()
     theta = get_current_theta()
+    distance_to_wall= get_distance_to_wall()
     
     if loopCounter > 0:
         x_position = get_xposition()
