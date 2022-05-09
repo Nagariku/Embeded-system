@@ -213,17 +213,10 @@ def get_distance_moved():
     Returns: 
     None
     '''
-<<<<<<< Updated upstream
-    global change_x, change_y # Unecessary, global is needed only when the variables are changed within the function
-    #if newTimeTick == True:
-    distance_travelled = distance_travelled + np.sqrt(change_x^2 + change_y^2) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
-    return None
-=======
     global change_x, change_y, distance_travelled # Unecessary, global is needed only when the variables are changed within the function
     if (newTimeTick == True and (change_x!=0 or change_y!=0)):
         distance_travelled = distance_travelled + np.sqrt(change_x**2 + change_y**2) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
     return distance_travelled
->>>>>>> Stashed changes
 
 def reach_correct_speed(set_LinVel):
     '''
@@ -239,26 +232,16 @@ def reach_correct_speed(set_LinVel):
     global vLastErr, vErrSum
     #Compute all the working error variables
     prop_error = set_LinVel - forward_velocity
-    if (timeDif2 != 0):
-        vErrSum = vErrSum + prop_error*timeDif2
-        errDer = (prop_error-vLastErr)/timeDif2
-    if (timeDif2 == 0):
-        errDer = 0
+    vErrSum = vErrSum + prop_error*timeDif2
+    errDer = (prop_error-vLastErr)/timeDif2
     #Compute PID Output
     out_signal = vKp * prop_error + vKi * vErrSum + errDer*vKd
     #Remember some variables for next time
-<<<<<<< Updated upstream
     vLastErr = error
     final_signal = set_LinVel+out_signal
     if (final_signal >0.22):
         final_signal  = 0.215
     tb.set_control_inputs(final_signal, 0) # set control input {lin-vel: out_signal, ang-vel:0}
-=======
-    vLastErr = prop_error
-    if (out_signal>0.22):
-        out_signal = 0.215
-    tb.set_control_inputs(out_signal, 0) # set control input {lin-vel: out_signal, ang-vel:0}
->>>>>>> Stashed changes
     return None
 
 def reach_correct_angle(set_angle):
@@ -283,19 +266,13 @@ def reach_correct_angle(set_angle):
     #Compute PID Output
     out_signal = aKp * prop_error + aKi * aErrSum + errDer*aKd
     #Remember some variables for next time
-<<<<<<< Updated upstream
-    aLastErr = error
-    if (out_signal>2.8):
-        out_signal = 2.75
-=======
     aLastErr = prop_error
-    if (out_signal>0):
-        out_signal = 1.9 - out_signal
-    if (out_signal<0):
-        out_signal = -1.9 - out_signal
+    if (out_signal>2.7):
+        out_signal = 2.65 - out_signal
+    if (out_signal<-2.75):
+        out_signal = -2.65 - out_signal
     #if (out_signal>2.8):
      #   out_signal = 2.75
->>>>>>> Stashed changes
     tb.set_control_inputs(0, out_signal) # set control input {lin-vel: 0, ang-vel: out_signal}
     return None
 
@@ -378,12 +355,8 @@ def setDistanceTunings(input_Kp, input_Ki, input_Kd):
     return None       
 
 while robotRunning:
-    if loopCounter == 0:
 
-<<<<<<< Updated upstream
-=======
     if loopCounter == 0:
->>>>>>> Stashed changes
         returnedList = []
         tb = Turtlebot() 
         time1 = time.time()
@@ -399,17 +372,10 @@ while robotRunning:
         change_y = 0
 
         vKp = 1.2
-<<<<<<< Updated upstream
-        vKi = 2.2
-        vKd = 0.126
-
-        aKp = 0.5
-=======
         vKi = 2.85
         vKd = 0.126
 
-        aKp = 0.1
->>>>>>> Stashed changes
+        aKp = 0.3
         aKi = 0
         aKd = 0
 
