@@ -39,32 +39,11 @@ loopCounter = 0
 
 
 def tick_to_rad(val):
-    '''
-    Parameter:
-    Tick reading
-    -----
-    Action: 
-    Converts the encoders ticks into radians (multiplication factor provided)
-    -----
-    Returns: 
-    The radian equivalent
-    '''
     # 0.087890625[deg] * 3.14159265359 / 180 = 0.001533981f
     val = val * 0.001533981 # 2^12 = 4096 ticks/revolution
     return val
 
 def get_linear_velocity():
-    '''
-    Parameter:
-    None
-    -----
-    Action: 
-    Calculates from the tick reading and the recorded time the bot velocity
-    -----
-    Returns: 
-    The linear velocity of the platform center point (mid point between wheels)
-    '''
-    #global vDeadReckon
     if timeDif != 0:
         vl = tick_to_rad(leftTick - refTickLeft) * 0.066 * 0.5/timeDif
         vr = tick_to_rad(rightTick - refTickRight) * 0.066 * 0.5/timeDif
@@ -74,16 +53,6 @@ def get_linear_velocity():
     return linear_vel
 
 def get_angular_velocity():
-    '''
-    Parameter:
-    None
-    -----
-    Action: 
-    Calculates from the tick reading and the recorded time the bot velocity
-    -----
-    Returns: 
-    The linear velocity of the platform center point (mid point between wheels)
-    '''
     if timeDif != 0:
         
         vl = tick_to_rad(leftTick - refTickLeft) * 0.066 * 0.5/timeDif
@@ -96,16 +65,6 @@ def get_angular_velocity():
     return angu_vel
 
 def data_to_list(listToSave):
-    '''
-    Parameter:
-    List to be extended
-    -----
-    Action: 
-    Appends the recieved list with the tick reading and the time passed since start of the robot
-    -----
-    Returns: 
-    The extended list
-    '''
     global timeDif2
     time2 = time.time()   
     timeDif = time2 - time1 
@@ -129,16 +88,6 @@ def data_to_list(listToSave):
     return listToSave
 
 def get_current_theta():
-    '''
-    Parameter:
-    None
-    -----
-    Action: 
-    Calculates the theta angle the robot perfomed according to the reference frame (taken at the robot start position)
-    -----
-    Returns: 
-    The live theta angle
-    '''
     global thetaDeadReckon,theta
     right_tick_relative = rightTick - refTickRight
     left_tick_relative = leftTick - refTickLeft
@@ -167,46 +116,6 @@ def get_averagesVandAngle():
             return averageSpeed, 360+averageTheta,
     return averageSpeed, averageTheta
 
-def get_xposition():
-    ''' 
-    Parameter:
-    None
-    -----
-    Action: 
-    Calculates the live x coordinate of the robot from the linear velocity and the theta angle
-    -----
-    Returns: 
-    The x coordinate of the platform center point (mid point between wheels)
-    '''
-    global current_x,change_x
-    if newTimeTick == True:
-        vAverageTick, thetaAverageTick = get_averagesVandAngle()
-        change_x = vAverageTick*np.cos(thetaAverageTick)*(timeDif2) # error appearing when speed is not constant
-        current_x = current_x + change_x
-    else:
-        change_x = 0
-    return current_x
-
-def get_yposition():
-    '''
-    Parameter:
-    None
-    -----
-    Action: 
-    Calculates the live y coordinate of the robot from the linear velocity and the theta angle
-    -----
-    Returns: 
-    The y coordinate of the platform center point (mid point between wheels)
-    '''
-    global current_y,change_y
-    if newTimeTick == True:
-        vAverageTick, thetaAverageTick = get_averagesVandAngle()
-        change_y = vAverageTick*np.sin(thetaAverageTick)*(timeDif2) # error appearing when speed is not constant
-        current_y = current_y + change_y
-    else:
-        change_y= 0
-    return current_y
-
 def get_distance_to_coordinate(listCoordsInput):
     deltaX=current_x - listCoordsInput[0]
     deltaY= current_y - listCoordsInput[1]
@@ -232,30 +141,19 @@ def get_angle_to_next_coord(coord_x,coord_y):
         elif (relative_y==0):
             #desired_angle = 0
             #constSpeed = -constSpeed
-            desired_angle = 2* np.pi
+            desired_angle = np.pi
         else:
             desired_angle = np.pi+np.arctan((relative_y)/(relative_x))
     else:
         if (relative_y>0):
             desired_angle = np.pi/2
         elif (relative_y==0):
-            robotRunning = False
+            desired_angle = 0
         else:
-            desired_angle = np.pi
+            desired_angle = 3*np.pi/2
     return desired_angle
 
-
 def update_distance_moved():
-    '''
-    Parameter:
-    None
-    -----
-    Action: 
-    Calculates distance traveled, adding the euclidian distance of the last change in position to the total traveled distance
-    -----
-    Returns: 
-    None
-    '''
     global distance_travelled # Unecessary, global is needed only when the variables are changed within the function
     if (newTimeTick == True and (change_x!=0 or change_y!=0)):
         distance_travelled = distance_travelled + np.sqrt(change_x**2 + change_y**2) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
@@ -271,17 +169,27 @@ def update_angle_total():
         angle_total = angle_total + (max(thetaDeadReckon())-min(thetaDeadReckon)) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
     return None
 
+def update_xposition():
+    global current_x,change_x
+    if newTimeTick == True:
+        vAverageTick, thetaAverageTick = get_averagesVandAngle()
+        change_x = vAverageTick*np.cos(thetaAverageTick)*(timeDif2) # error appearing when speed is not constant
+        current_x = current_x + change_x
+    else:
+        change_x = 0
+    return current_x
+
+def update_yposition():
+    global current_y,change_y
+    if newTimeTick == True:
+        vAverageTick, thetaAverageTick = get_averagesVandAngle()
+        change_y = vAverageTick*np.sin(thetaAverageTick)*(timeDif2) # error appearing when speed is not constant
+        current_y = current_y + change_y
+    else:
+        change_y= 0
+    return current_y
+
 def reach_correct_speed(set_LinVel):
-    '''
-    Parameter:
-    The linear velocity set, aka velocity in the x axis (in the robot frame)
-    -----
-    Action: 
-    Sets the linear velocity, that is calculated from the determined error and the PID parameters
-    -----
-    Returns: 
-    None
-    '''
     global vLastErr, vErrSum
     #Compute all the working error variables
     prop_error = set_LinVel - forward_velocity
@@ -298,49 +206,11 @@ def reach_correct_speed(set_LinVel):
     return None
 
 def reach_correct_angle(set_angle):
-    '''
-    Parameter:
-    The angular velocity set, aka angular in the theta axis (in the robot frame)
-    -----
-    Action: 
-    Sets the angular velocity, that is calculated from the determined error and the PID parameters
-    -----
-    Returns: 
-    None
-    '''
-    global aLastErr, aErrSum
-    #Compute all the working error variables
-    prop_error = set_angle - theta
-    if (timeDif2 != 0):
-        aErrSum = aErrSum + prop_error*timeDif2
-        errDer = (prop_error-aLastErr)/timeDif2
-    if (timeDif2 == 0):
-        errDer = 0
-    #Compute PID Output
-    out_signal = aKp * prop_error + aKi * aErrSum + errDer*aKd
-    #Remember some variables for next time
-    aLastErr = prop_error
-    if (out_signal>2.7):
-        out_signal = 2.65 
-    if (out_signal<-2.75):
-        out_signal = -2.65 
-    #if (out_signal>2.8):
-     #   out_signal = 2.75
-    tb.set_control_inputs(0, out_signal) # set control input {lin-vel: 0, ang-vel: out_signal}
+    outInFuncSignal = reach_correct_angle_signal(set_angle)
+    tb.set_control_inputs(0, outInFuncSignal) # set control input {lin-vel: 0, ang-vel: out_signal}
     return None
 
 def reach_correct_distance(set_distance):
-    '''
-    Parameter:
-    Target coordinate
-    -----
-    Action: 
-    ????????????
-    Corentin doesn't get its purpose, same as reach_correct_speed(set_LinVel)?
-    -----
-    Returns: 
-    None
-    '''
     global dLastErr, dErrSum
     #Compute all the working error variables
     prop_error = set_distance - distance_travelled
@@ -348,7 +218,7 @@ def reach_correct_distance(set_distance):
         dErrSum = dErrSum + prop_error*timeDif2
         errDer = (prop_error-dLastErr)/timeDif2
     #Compute PID Output
-    out_signal = aKp * prop_error + aKi * dErrSum + errDer*aKd
+    out_signal = dKp * prop_error + dKi * dErrSum + errDer*dKd
     #Remember some variables for next time
     dLastErr = prop_error
     if (out_signal>0.22):
@@ -357,17 +227,6 @@ def reach_correct_distance(set_distance):
     return None
 
 def reach_correct_angle_total(set_angle_total):
-    '''
-    Parameter:
-    Target coordinate
-    -----
-    Action: 
-    ????????????
-    Corentin doesn't get its purpose, same as reach_correct_speed(set_LinVel)?
-    -----
-    Returns: 
-    None
-    '''
     global aLastErr, aErrSum
     #Compute all the working error variables
     prop_error = set_angle_total - angle_total
@@ -384,16 +243,6 @@ def reach_correct_angle_total(set_angle_total):
     return None
 
 def reach_correct_angle_signal(set_angle):
-    '''
-    Parameter:
-    The angular velocity set, aka angular in the theta axis (in the robot frame)
-    -----
-    Action: 
-    Sets the angular velocity, that is calculated from the determined error and the PID parameters
-    -----
-    Returns: 
-    None
-    '''
     global aLastErr, aErrSum
     #Compute all the working error variables
     prop_error = set_angle - theta
@@ -420,12 +269,10 @@ def reach_correct_angle_signal(set_angle):
     if prop_error < 0:
         correct_prop_error = 2*np.pi+prop_error
 
-
-
-    aErrSum = aErrSum + prop_error*timeDif2
-    errDer = (prop_error-aLastErr)/timeDif2
+    aErrSum = aErrSum + correct_prop_error*timeDif2
+    errDer = (correct_prop_error-aLastErr)/timeDif2
     #Compute PID Output
-    out_signal = aKp * prop_error + aKi * aErrSum + errDer*aKd
+    out_signal = aKp * correct_prop_error + aKi * aErrSum + errDer*aKd
     #Remember some variables for next time
     aLastErr = error
     if (out_signal>2.7):
@@ -440,11 +287,11 @@ def reachCoordinates_constantVel(input_x, input_y,constSpeed):
     #determination of direction
     #global relative_x, relative_y
     desired_angle_func = get_angle_to_next_coord(input_x, input_y)
-    theta_output = reach_correct_angle_signal(desired_angle)
+    theta_output = reach_correct_angle_signal(desired_angle_func)
     tb.set_control_inputs(constSpeed, theta_output) # set control input {lin-vel: 0, ang-vel: out_signal}
     return
 
-def reach_following_coordinates(coordinateList):
+def reach_following_coordinates(coordinateList,SpeedUsed,sensetivityUsed):
     #infinnite loop of following
     # case 1 = normal movement
     # case 2 = turn in 1 place
@@ -460,30 +307,20 @@ def reach_following_coordinates(coordinateList):
 
         if (abs(targetting_angle)< np.pi/4):
             #caseNum = 1
-            reachCoordinates_constantVel(current_target[0], current_target[1], 0.07)
+            reachCoordinates_constantVel(current_target[0], current_target[1], SpeedUsed)
         elif (abs(targetting_angle)< np.pi/2):
             #caseNum = 2
-            reachCoordinates_constantVel(current_target[0], current_target[1], 0.03)
+            reachCoordinates_constantVel(current_target[0], current_target[1], SpeedUsed/2)
         else:
             #caseNum = 3
             reach_correct_angle(targetting_angle)
 
-        if (get_distance_to_coordinate(current_target)<0.07):
+        if (get_distance_to_coordinate(current_target)<sensetivityUsed):
             targetTReached = True
         
     return None
 
 def setVelTunings(input_Kp, input_Ki, input_Kd):
-    '''
-    Parameter:
-    The PID parameters for the velocity controller
-    -----
-    Action: 
-    Sets the PID parameters
-    -----
-    Returns: 
-    None
-    '''
     global vKp, vKi, vKd
     vKp = input_Kp
     vKi = input_Ki
@@ -491,16 +328,6 @@ def setVelTunings(input_Kp, input_Ki, input_Kd):
     return None
 
 def setAngleTunings(input_Kp, input_Ki, input_Kd):
-    '''
-    Parameter:
-    The PID parameters for the angular velocity controller
-    -----
-    Action: 
-    Sets the PID parameters
-    -----
-    Returns: 
-    None
-    '''
     global aKp, aKi, aKd
     aKp = input_Kp
     aKi = input_Ki
@@ -508,16 +335,6 @@ def setAngleTunings(input_Kp, input_Ki, input_Kd):
     return    
 
 def setDistanceTunings(input_Kp, input_Ki, input_Kd):
-    '''
-    Parameter:
-    The PID parameters for the ??? controller
-    -----
-    Action: 
-    Sets the PID parameters
-    -----
-    Returns: 
-    None
-    '''
     global dKp, dKi, dKd
     dKp = input_Kp
     dKi = input_Ki
@@ -525,7 +342,6 @@ def setDistanceTunings(input_Kp, input_Ki, input_Kd):
     return None       
 
 while robotRunning:
-
     if loopCounter == 0:
         returnedList = []
         tb = Turtlebot() 
@@ -540,8 +356,6 @@ while robotRunning:
 
         change_x= 0
         change_y = 0
-
-        wall_y_coordinate = 1.75
 
         vKp = 1.2
         vKi = 2.85
@@ -567,7 +381,9 @@ while robotRunning:
         theta = 0
 
         distance_travelled =0
+        angle_total =0
         forward_velocity = 0
+        wall_y_coordinate = 1.75
         
         refTickLeft = dataList['left']
         refTickRight = dataList['right']
@@ -585,7 +401,7 @@ while robotRunning:
         #reach_correct_distance(2)
 
         #MIMO test
-        reach_following_coordinates([0,1],[2,1],[0,0])
+        #reach_following_coordinates([[0,1],[2,1],[0,0]], 0.07, 0.05)
 
         #tb.set_control_inputs(0.1, 0.1) # set control input {lin-vel: 0.1, ang-vel:0} 
         
@@ -605,8 +421,8 @@ while robotRunning:
     distance_to_wall= get_distance_to_wall()
     
     if loopCounter > 0:
-        x_position = get_xposition()
-        y_position = get_yposition()
+        x_position = update_xposition()
+        y_position = update_yposition()
     else:
         x_position =0
         y_position = 0
@@ -617,6 +433,8 @@ while robotRunning:
         print("Angle: ", str(round(theta/2/np.pi*360, 5)))
         print("x position: ", str(round(x_position,5)))
         print("y position: ", str(round(y_position,5)))
+        print("total distance travelled", str(round(distance_travelled,5)))
+        print("total angular displacement", str(round(distance_travelled,5)))
             
     #previousTimeDif = timeDif
     
