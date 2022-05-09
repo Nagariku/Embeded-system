@@ -238,6 +238,7 @@ def reach_correct_speed(set_LinVel):
         errDer = (prop_error-vLastErr)/recentTimeDif
     if (recentTimeDif == 0):
         errDer = 0
+        
     #Compute PID Output
     out_signal = vKp * prop_error + vKi * vErrSum + errDer*vKd
     #Remember some variables for next time
@@ -264,6 +265,7 @@ def reach_correct_angle(set_angle):
     if (recentTimeDif != 0):
         aErrSum = aErrSum + prop_error*recentTimeDif
         errDer = (prop_error-aLastErr)/recentTimeDif
+        
     if (recentTimeDif == 0):
         errDer = 0
     #Compute PID Output
@@ -272,6 +274,7 @@ def reach_correct_angle(set_angle):
     aLastErr = prop_error
     if (out_signal > 0):
         out_signal = 1.9 - out_signal
+        
     if (out_signal < 0):
         out_signal = -1.9 - out_signal
     #if (out_signal>2.8):
@@ -440,6 +443,9 @@ while robotRunning:
     loopCounter += 1
         
     if totTimeDif > 120:
+        '''
+        Stop the robot after ... seconds
+        '''
         robotRunning = False
         
 tb.stop()
