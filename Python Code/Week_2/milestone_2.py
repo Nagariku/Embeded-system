@@ -255,7 +255,7 @@ def reach_correct_angle(set_angle):
     global aLastErr, aErrSum
     #Compute all the working error variables
     prop_error = set_angle - theta
-    aErrSum = vErrSum + prop_error*timeDif2
+    aErrSum = aErrSum + prop_error*timeDif2
     errDer = (prop_error-aLastErr)/timeDif2
     #Compute PID Output
     out_signal = aKp * prop_error + aKi * aErrSum + errDer*aKd
@@ -281,7 +281,7 @@ def reach_correct_distance(set_distance):
     global dLastErr, dErrSum
     #Compute all the working error variables
     prop_error = set_distance - distance_travelled
-    dErrSum = vErrSum + prop_error*timeDif2
+    dErrSum = dErrSum + prop_error*timeDif2
     errDer = (prop_error-dLastErr)/timeDif2
     #Compute PID Output
     out_signal = aKp * prop_error + aKi * dErrSum + errDer*aKd
@@ -360,15 +360,15 @@ while robotRunning:
         change_x= 0
         change_y = 0
 
-        vkp = 10
+        vkp = 0.3
         vki = 0
         vkd = 0
 
-        #aKp = -10
+        aKp = -0.3
         aKi = 0
         aKd = 0
 
-        dKp = -10
+        dKp = -0.3
         dKi = 0
         dKd = 0
 
