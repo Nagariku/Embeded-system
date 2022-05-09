@@ -222,10 +222,10 @@ def get_distance_moved():
     Returns: 
     None
     '''
-    global change_x, change_y # Unecessary, global is needed only when the variables are changed within the function
-    #if newTimeTick == True:
-    distance_travelled = distance_travelled + np.sqrt(change_x^2 + change_y^2) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
-    return None
+    global change_x, change_y, distance_travelled # Unecessary, global is needed only when the variables are changed within the function
+    if (newTimeTick == True and (change_x!=0 or change_y!=0)):
+        distance_travelled = distance_travelled + np.sqrt(change_x^2 + change_y^2) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
+    return distance_travelled
 
 def reach_correct_speed(set_LinVel):
     '''
@@ -419,7 +419,7 @@ while robotRunning:
         x_position = get_xposition()
         y_position = get_yposition()
     
-    if loopCounter % 5 == 0:
+    if loopCounter % 500 == 0:
         print("Linear velocity: ", str(round(forward_velocity, 5)))
         print("Angular velicity: ", str(round(angular_velocity, 5)))
         print("Angle: ", str(round(theta/2/np.pi*()*360, 5)))
