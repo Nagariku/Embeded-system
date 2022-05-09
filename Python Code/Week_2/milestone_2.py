@@ -153,6 +153,8 @@ def get_angle_to_next_coord(coord_x,coord_y):
             desired_angle = 3*np.pi/2
     return desired_angle
 
+
+
 def update_distance_moved():
     global distance_travelled # Unecessary, global is needed only when the variables are changed within the function
     if (newTimeTick == True and (change_x!=0 or change_y!=0)):
@@ -211,6 +213,7 @@ def reach_correct_angle(set_angle):
     return None
 
 def reach_correct_distance(set_distance):
+
     global dLastErr, dErrSum
     #Compute all the working error variables
     prop_error = set_distance - distance_travelled
@@ -224,6 +227,9 @@ def reach_correct_distance(set_distance):
     if (out_signal>0.22):
         out_signal = 0.215
     tb.set_control_inputs(out_signal, 0) # set control input {lin-vel: out_signal, ang-vel:0}
+    return None
+
+def reach_correct_distance(inputCoordList, constVel, dist):
     return None
 
 def reach_correct_angle_total(set_angle_total):
