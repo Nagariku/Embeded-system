@@ -221,19 +221,6 @@ def update_distance_moved():
     global distance_travelled # Unecessary, global is needed only when the variables are changed within the function
     if (newTimeTick == True and (change_x!=0 or change_y!=0)):
         distance_travelled = distance_travelled + np.sqrt(change_x**2 + change_y**2) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
-<<<<<<< HEAD
-=======
-    return None
-
-def update_angle_total():
-    global angle_total
-    if (max(thetaDeadReckon())-min(thetaDeadReckon))>1: # sensetivity
-        biggerTheta = -2*np.pi+max(thetaDeadReckon)
-        smallerTheta = min(thetaDeadReckon)
-        angle_total = angle_total + smallerTheta - biggerTheta
-    else:
-        angle_total = angle_total + (max(thetaDeadReckon())-min(thetaDeadReckon)) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
->>>>>>> CORENTIN-READ-THIS
     return None
 
 def update_angle_total():
@@ -246,6 +233,15 @@ def update_angle_total():
         angle_total = angle_total + (max(thetaDeadReckon())-min(thetaDeadReckon)) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
     return None
 
+def update_angle_total():
+    global angle_total
+    if (max(thetaDeadReckon())-min(thetaDeadReckon))>1: # sensetivity
+        biggerTheta = -2*np.pi+max(thetaDeadReckon)
+        smallerTheta = min(thetaDeadReckon)
+        angle_total = angle_total + smallerTheta - biggerTheta
+    else:
+        angle_total = angle_total + (max(thetaDeadReckon())-min(thetaDeadReckon)) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
+    return None
 
 def reach_correct_speed(set_LinVel):
     '''
