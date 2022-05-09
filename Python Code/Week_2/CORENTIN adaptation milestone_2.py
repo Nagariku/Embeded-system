@@ -63,19 +63,19 @@ def get_linear_velocity():
     Returns: 
     The linear velocity of the platform center point (mid point between wheels)
     '''
-    #global vDeadReckon
+    global vDeadReckon
     if timeDif != 0:
-        vl = tick_to_rad(leftTick - refTickLeft) * 0.066 * 0.5/timeDif
+        vl = tick_to_rad(leftTick - refTickLeft) * 0.066 * 0.5/timeDif # wheel diameter 66mm
         vr = tick_to_rad(rightTick - refTickRight) * 0.066 * 0.5/timeDif
         linear_vel = (vr + vl)/2
-        
+        # ======================== CHECK ===========================
     else:
         linear_vel = 0
 
-    if newTimeTick ==True:
+    if newTimeTick == True:
         vDeadReckon.append(linear_vel)
         vDeadReckon.pop(0)
-        
+        # ======================== CHECK ===========================
     return linear_vel
 
 def get_angular_velocity():
@@ -90,17 +90,17 @@ def get_angular_velocity():
     The linear velocity of the platform center point (mid point between wheels)
     '''
     if timeDif != 0:
-        
         vl = tick_to_rad(leftTick - refTickLeft) * 0.066 * 0.5/timeDif
         vr = tick_to_rad(rightTick - refTickRight) * 0.066 * 0.5/timeDif
-        angu_vel = (vr-vl)/0.16 
+        angu_vel = (vr-vl)/0.16 # platform width of 160mm
     
     else:
-        angu_vel = 0
+        angu_vel = 0 # not true if the reading is taken fast. The time is zero, tick hasn't yet changed but 
+        # velocity is not zero????
     
     return angu_vel
 
-def data_to_list(listToSave):
+def get_tick_timeDif(listToSave):
     '''
     Parameter:
     List to be extended
@@ -362,7 +362,7 @@ while robotRunning:
         returnedList = []
         tb = Turtlebot() 
         time1 = time.time()
-        returnedList = data_to_list(returnedList)
+        returnedList = get_tick_timeDif(returnedList)
         
         dataList = returnedList[0]
         timeDif = returnedList[1]
@@ -408,7 +408,7 @@ while robotRunning:
         #tb.set_control_inputs(0.1, 0.1) # set control input {lin-vel: 0.1, ang-vel:0} 
         
     returnedList = []
-    returnedList = data_to_list(returnedList)
+    returnedList = get_tick_timeDif(returnedList)
     dataList = returnedList[0]
     timeDif = returnedList[1]
 
