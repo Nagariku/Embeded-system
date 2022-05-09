@@ -112,7 +112,7 @@ def data_to_list(listToSave):
     Returns: 
     The extended list
     '''
-    global timeDif2
+    global timeDif2, newTimeTick
     time2 = time.time()   
     timeDif = time2 - time1 
   
@@ -221,9 +221,9 @@ def get_distance_moved():
     Returns: 
     None
     '''
-    global change_x, change_y # Unecessary, global is needed only when the variables are changed within the function
+    global change_x, change_y, distance_travelled # Unecessary, global is needed only when the variables are changed within the function
     #if newTimeTick == True:
-    distance_travelled = distance_travelled + np.sqrt(change_x^2 + change_y^2) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
+    distance_travelled = distance_travelled + np.sqrt(change_x**2 + change_y**2) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
     return None
 
 def reach_correct_speed(set_LinVel):
@@ -355,12 +355,7 @@ def setDistanceTunings(input_Kp, input_Ki, input_Kd):
 
 while robotRunning:
 
-<<<<<<< HEAD
     if loopCounter == 1:
-        
-=======
-    if loopCounter == 0:
->>>>>>> 7f8a0cd7c3f3a703111b8a95d8e91ef341ec0172
         returnedList = []
         tb = Turtlebot() 
         time1 = time.time()
