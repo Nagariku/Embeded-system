@@ -36,8 +36,7 @@ timeDifArray = [0,0]
 thetaDeadReckon = [0,0]
 vDeadReckon = [0,0]
 
-loopCounter = 0
-printCount = 0
+loopCounter = 1
 
 def tick_to_rad(val):
     '''
@@ -356,12 +355,7 @@ def setDistanceTunings(input_Kp, input_Ki, input_Kd):
 
 while robotRunning:
 
-<<<<<<< HEAD
     if loopCounter == 1:
-=======
-    if loopCounter == 0:
-        
->>>>>>> parent of c6a87aa (Update milestone_2.py)
         returnedList = []
         tb = Turtlebot() 
         time1 = time.time()
@@ -372,6 +366,8 @@ while robotRunning:
         
         current_x = 0
         current_y = 0
+        x_position = 0
+        y_position = 0
 
         change_x= 0
         change_y = 0
@@ -397,7 +393,7 @@ while robotRunning:
         dErrSum = 0
         dLastErr = 0
 
-        distance_travelled =0
+        distance_travelled = 0
         forward_velocity = 0
         
         refTickLeft = dataList['left']
@@ -421,31 +417,17 @@ while robotRunning:
     distance_travelled = get_distance_moved()
     theta = get_current_theta()
     
-    if loopCounter > 0:
+    if loopCounter > 1:
         x_position = get_xposition()
         y_position = get_yposition()
-    else:
-        x_position =0
-        y_position = 0
     
-<<<<<<< HEAD
     if loopCounter % 5 == 0:
         print("Linear velocity: ", str(round(forward_velocity, 5)))
-=======
-    
-    if loopCounter == printCount *1000:
-        print("\nLinear velocity: ", str(round(forward_velocity, 5)))
->>>>>>> parent of c6a87aa (Update milestone_2.py)
         print("Angular velicity: ", str(round(angular_velocity, 5)))
         print("Angle: ", str(round(theta/2/np.pi*()*360, 5)))
         print("x position: ", str(round(x_position,5)))
         print("y position: ", str(round(y_position,5)))
-<<<<<<< HEAD
 
-=======
-        printCount += 1
-        
->>>>>>> parent of c6a87aa (Update milestone_2.py)
             
     #previousTimeDif = timeDif
     
