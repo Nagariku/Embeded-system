@@ -118,12 +118,12 @@ def data_to_list(listToSave):
   
     timeDifArray.append(timeDif)
     timeDifArray.pop(0)
-    timeDif2 = timeDifArray(1)-timeDifArray(0)
-    if (timeDifArray(1)-timeDifArray(0))!=0:
+    timeDif2 = timeDifArray[1]-timeDifArray[0]
+    if (timeDifArray[1]-timeDifArray[0])!=0:
         newTimeTick = True
     else:
         newTimeTick = False
-    listToSave.append(tb.get_encoder_thicks())
+    listToSave.append(tb.get_encoder_ticks())
     listToSave.append(timeDif)
     
     return listToSave
@@ -139,22 +139,25 @@ def get_current_theta():
     Returns: 
     The live theta angle
     '''
-    global thetaDeadReckon
+    global thetaDeadReckon,theta
     right_tick_relative = rightTick - refTickRight
     left_tick_relative = leftTick - refTickLeft
     difference = right_tick_relative - left_tick_relative
     if difference > 0:
-        remainder = difference % 19859
-        theta = remainder*0.0181274
+        remaindery = difference % 19859
+        theta = remaindery*0.0181274
+        theta = theta/360*2*np.pi #degrees to radians
     if difference < 0:
-        remainder = (-difference) % (-19859)
-        theta = remainder*(-0.0181274) 
+        remaindery = (-difference) % (-19859)
+        theta = remaindery*(-0.0181274) 
+        theta = theta/360*2*np.pi #degrees to radians
     else:
         theta = 0
+        
     if newTimeTick ==True:
         thetaDeadReckon.append(theta)
         thetaDeadReckon.pop(0)
-    theta = theta/360*2*np.pi() #degrees to radians
+    
     return theta
 
 def get_xposition():
@@ -170,8 +173,8 @@ def get_xposition():
     '''
     global current_x,change_x
     if newTimeTick == True:
-        thetaAverageTick = thetaDeadReckon(1)-thetaDeadReckon(0)
-        vAverageTick = vDeadReckon(1)-vDeadReckon(0)
+        thetaAverageTick = thetaDeadReckon[1]-thetaDeadReckon[0]
+        vAverageTick = vDeadReckon[1]-vDeadReckon[0]
         change_x = vAverageTick*np.cos(thetaAverageTick)*(timeDif2) # error appearing when speed is not constant
         current_x = current_x + change_x
     else:
@@ -191,8 +194,8 @@ def get_yposition():
     '''
     global current_y,change_y
     if newTimeTick == True:
-        thetaAverageTick = thetaDeadReckon(1)-thetaDeadReckon(0)
-        vAverageTick = vDeadReckon(1)-vDeadReckon(0)
+        thetaAverageTick = thetaDeadReckon[1]-thetaDeadReckon[0]
+        vAverageTick = vDeadReckon[1]-vDeadReckon[0]
         change_y = vAverageTick*np.sin(thetaAverageTick)*(timeDif2) # error appearing when speed is not constant
         current_y = current_y + change_y
     else:
@@ -211,8 +214,8 @@ def get_distance_moved():
     None
     '''
     global change_x, change_y, distance_travelled # Unecessary, global is needed only when the variables are changed within the function
-    #if newTimeTick == True:
-    distance_travelled = distance_travelled + np.sqrt(change_x^2 + change_y^2) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
+    if newTimeTick == True:
+        distance_travelled = distance_travelled + np.sqrt(change_x^2 + change_y^2) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
     return None
 
 def reach_correct_speed(set_LinVel):
@@ -229,12 +232,15 @@ def reach_correct_speed(set_LinVel):
     global vLastErr, vErrSum
     #Compute all the working error variables
     prop_error = set_LinVel - forward_velocity
-    vErrSum = vErrSum + prop_error*timeDif2
-    errDer = (prop_error-vLastErr)/timeDif2
+    if (timeDif2 != 0):
+        vErrSum = vErrSum + prop_error*timeDif2
+        errDer = (prop_error-vLastErr)/timeDif2
+    if (timeDif2 == 0):
+        errDer = 0
     #Compute PID Output
     out_signal = vKp * prop_error + vKi * vErrSum + errDer*vKd
     #Remember some variables for next time
-    vLastErr = error
+    vLastErr = prop_error
     if (out_signal>0.22):
         out_signal = 0.215
     tb.set_control_inputs(out_signal, 0) # set control input {lin-vel: out_signal, ang-vel:0}
@@ -254,14 +260,21 @@ def reach_correct_angle(set_angle):
     global aLastErr, aErrSum
     #Compute all the working error variables
     prop_error = set_angle - theta
-    aErrSum = aErrSum + prop_error*timeDif2
-    errDer = (prop_error-aLastErr)/timeDif2
+    if (timeDif2 != 0):
+        aErrSum = aErrSum + prop_error*timeDif2
+        errDer = (prop_error-aLastErr)/timeDif2
+    if (timeDif2 == 0):
+        errDer = 0
     #Compute PID Output
     out_signal = aKp * prop_error + aKi * aErrSum + errDer*aKd
     #Remember some variables for next time
-    aLastErr = error
-    if (out_signal>0.22):
-        out_signal = 0.215
+    aLastErr = prop_error
+    if (out_signal>0):
+        out_signal = 1.9 - out_signal
+    if (out_signal<0):
+        out_signal = -1.9 - out_signal
+    #if (out_signal>2.8):
+     #   out_signal = 2.75
     tb.set_control_inputs(0, out_signal) # set control input {lin-vel: 0, ang-vel: out_signal}
     return None
 
@@ -280,12 +293,13 @@ def reach_correct_distance(set_distance):
     global dLastErr, dErrSum
     #Compute all the working error variables
     prop_error = set_distance - distance_travelled
-    dErrSum = dErrSum + prop_error*timeDif2
-    errDer = (prop_error-dLastErr)/timeDif2
+    if (timeDif2 != 0):
+        dErrSum = dErrSum + prop_error*timeDif2
+        errDer = (prop_error-dLastErr)/timeDif2
     #Compute PID Output
     out_signal = aKp * prop_error + aKi * dErrSum + errDer*aKd
     #Remember some variables for next time
-    dLastErr = error
+    dLastErr = prop_error
     if (out_signal>0.22):
         out_signal = 0.215
     tb.set_control_inputs(out_signal, 0) # set control input {lin-vel: out_signal, ang-vel:0}
@@ -359,15 +373,15 @@ while robotRunning:
         change_x= 0
         change_y = 0
 
-        vkp = 0.3
-        vki = 0
-        vkd = 0
+        vKp = 1.2
+        vKi = 2.85
+        vKd = 0.126
 
-        aKp = -0.3
+        aKp = 0.1
         aKi = 0
         aKd = 0
 
-        dKp = -0.3
+        dKp = 0
         dKi = 0
         dKd = 0
 
@@ -379,14 +393,17 @@ while robotRunning:
 
         dErrSum = 0
         dLastErr = 0
+        
+        theta = 0
 
         distance_travelled =0
+        forward_velocity = 0
         
         refTickLeft = dataList['left']
         refTickRight = dataList['right']
         
-        reach_correct_speed(0.04)
-        #reach_correct_speed(np.pi())
+        reach_correct_speed(0.05)
+        #reach_correct_angle(np.pi*3/2)
         #reach_correct_distance(2)
         #tb.set_control_inputs(0.1, 0.1) # set control input {lin-vel: 0.1, ang-vel:0} 
         
@@ -406,11 +423,14 @@ while robotRunning:
     if loopCounter > 0:
         x_position = get_xposition()
         y_position = get_yposition()
+    else:
+        x_position =0
+        y_position = 0
     
-    if loopCounter % 5 == 0:
+    if loopCounter % 500 == 0:
         print("Linear velocity: ", str(round(forward_velocity, 5)))
         print("Angular velicity: ", str(round(angular_velocity, 5)))
-        print("Angle: ", str(round(theta/2/np.pi*()*360, 5)))
+        print("Angle: ", str(round(theta/2/np.pi*360, 5)))
         print("x position: ", str(round(x_position,5)))
         print("y position: ", str(round(y_position,5)))
             
@@ -418,7 +438,7 @@ while robotRunning:
     
     loopCounter += 1
         
-    if timeDif > 5:
+    if timeDif > 60:
         robotRunning = False
         
 tb.stop()
