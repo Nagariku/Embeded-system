@@ -246,9 +246,10 @@ def reach_correct_speed(set_LinVel):
     out_signal = vKp * prop_error + vKi * vErrSum + errDer*vKd
     #Remember some variables for next time
     vLastErr = error
-    if (out_signal>0.22):
-        out_signal = 0.215
-    tb.set_control_inputs(out_signal, 0) # set control input {lin-vel: out_signal, ang-vel:0}
+    final_signal = set_LinVel+out_signal
+    if (final_signal >0.22):
+        final_signal  = 0.215
+    tb.set_control_inputs(final_signal, 0) # set control input {lin-vel: out_signal, ang-vel:0}
     return None
 
 def reach_correct_angle(set_angle):
@@ -271,8 +272,8 @@ def reach_correct_angle(set_angle):
     out_signal = aKp * prop_error + aKi * aErrSum + errDer*aKd
     #Remember some variables for next time
     aLastErr = error
-    if (out_signal>0.22):
-        out_signal = 0.215
+    if (out_signal>2.8):
+        out_signal = 2.75
     tb.set_control_inputs(0, out_signal) # set control input {lin-vel: 0, ang-vel: out_signal}
     return None
 
@@ -372,11 +373,11 @@ while robotRunning:
         change_x= 0
         change_y = 0
 
-        vkp = 10
-        vki = 0
-        vkd = 0
+        vKp = 1.2
+        vKi = 2.2
+        vKd = 0.126
 
-        aKp = -10
+        aKp = 0.5
         aKi = 0
         aKd = 0
 
