@@ -36,7 +36,8 @@ timeDifArray = [0,0]
 thetaDeadReckon = [0,0]
 vDeadReckon = [0,0]
 
-loopCounter = 1
+loopCounter = 0
+printCount = 0
 
 def tick_to_rad(val):
     '''
@@ -112,7 +113,7 @@ def data_to_list(listToSave):
     Returns: 
     The extended list
     '''
-    global timeDif2
+    global timeDif2, newTimeTick
     time2 = time.time()   
     timeDif = time2 - time1 
   
@@ -221,9 +222,9 @@ def get_distance_moved():
     Returns: 
     None
     '''
-    global change_x, change_y # Unecessary, global is needed only when the variables are changed within the function
+    global change_x, change_y, distance_travelled # Unecessary, global is needed only when the variables are changed within the function
     #if newTimeTick == True:
-    distance_travelled = distance_travelled + np.sqrt(change_x^2 + change_y^2) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
+    distance_travelled = distance_travelled + np.sqrt(change_x**2 + change_y**2) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
     return None
 
 def reach_correct_speed(set_LinVel):
@@ -357,10 +358,10 @@ while robotRunning:
 
 <<<<<<< HEAD
     if loopCounter == 1:
-        
 =======
     if loopCounter == 0:
->>>>>>> 7f8a0cd7c3f3a703111b8a95d8e91ef341ec0172
+        
+>>>>>>> parent of c6a87aa (Update milestone_2.py)
         returnedList = []
         tb = Turtlebot() 
         time1 = time.time()
@@ -371,8 +372,6 @@ while robotRunning:
         
         current_x = 0
         current_y = 0
-        x_position = 0
-        y_position = 0
 
         change_x= 0
         change_y = 0
@@ -398,7 +397,7 @@ while robotRunning:
         dErrSum = 0
         dLastErr = 0
 
-        distance_travelled = 0
+        distance_travelled =0
         forward_velocity = 0
         
         refTickLeft = dataList['left']
@@ -422,17 +421,31 @@ while robotRunning:
     distance_travelled = get_distance_moved()
     theta = get_current_theta()
     
-    if loopCounter > 1:
+    if loopCounter > 0:
         x_position = get_xposition()
         y_position = get_yposition()
+    else:
+        x_position =0
+        y_position = 0
     
+<<<<<<< HEAD
     if loopCounter % 5 == 0:
         print("Linear velocity: ", str(round(forward_velocity, 5)))
+=======
+    
+    if loopCounter == printCount *1000:
+        print("\nLinear velocity: ", str(round(forward_velocity, 5)))
+>>>>>>> parent of c6a87aa (Update milestone_2.py)
         print("Angular velicity: ", str(round(angular_velocity, 5)))
         print("Angle: ", str(round(theta/2/np.pi*()*360, 5)))
         print("x position: ", str(round(x_position,5)))
         print("y position: ", str(round(y_position,5)))
+<<<<<<< HEAD
 
+=======
+        printCount += 1
+        
+>>>>>>> parent of c6a87aa (Update milestone_2.py)
             
     #previousTimeDif = timeDif
     
