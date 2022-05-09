@@ -424,12 +424,13 @@ while robotRunning:
     if loopCounter > 0:
         x_position = get_xposition()
         y_position = get_yposition()
+        
     else:
         x_position =0
         y_position = 0
     
     
-    if loopCounter == printCount *1000:
+    if loopCounter == printCount * 1000:
         print("\nLinear velocity: ", str(round(forward_velocity, 5)))
         print("Angular velicity: ", str(round(angular_velocity, 5)))
         print("Angle: ", str(round(theta/2/np.pi*360, 5)))
