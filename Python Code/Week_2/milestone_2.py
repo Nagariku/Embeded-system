@@ -153,7 +153,10 @@ def get_angle_to_next_coord(coord_x,coord_y):
             desired_angle = 3*np.pi/2
     return desired_angle
 
-
+def get_coordinates_behind_point_angle(inputCoordListSmall,distanceBehind):
+    dist_x = inputCoordListSmall [0] + distanceBehind * np.sin(thetaTargetAngle)
+    dist_y = inputCoordListSmall [1] + distanceBehind * np.cos(thetaTargetAngle)
+    return dist_x, dist_y
 
 def update_distance_moved():
     global distance_travelled # Unecessary, global is needed only when the variables are changed within the function
@@ -229,7 +232,32 @@ def reach_correct_distance(set_distance):
     tb.set_control_inputs(out_signal, 0) # set control input {lin-vel: out_signal, ang-vel:0}
     return None
 
-def reach_correct_distance(inputCoordList, constVel, dist):
+def reach_correct_distance_and_angle(inputCoordList, constVel, dist):
+    #listOfSeqCoord = [[0,0],[0,2],[3,1]]
+    #current_target = listOfSeqCoord[2][0]
+    #print(current_target)
+    #3
+    global thetaTargetAngle
+    targetTReached = False
+    listOfSeqCoord = []
+    thetaTargetAngle = inputCoordList [2] 
+    numAcc = 3 #number of accuracy, higher = better, too high = oscilations
+    distSplit = dist/numAcc
+    for n in range(0, numAcc+1, 1) :
+        distanceBeh = dist - n*distSplit
+        listOfSeqCoord.append(get_coordinates_behind_point_angle(inputCoordList, distanceBeh))
+    while (timeDif< 120 or finalReached ==False):
+        if (loopCounter ==0 or targetTReached == True):
+            if (len(listOfSeqCoord)==0):
+                finalReached = True
+            else:
+                current_target = listOfSeqCoord[0]
+                listOfSeqCoord.pop(0)
+                reachCoordinates_constantVel(current_target[0],current_target[1], constVel)
+                if (get_distance_to_coordinate(current_target)<0.05):
+                    targetTReached = True
+                else:
+                    targetTReached = False
     return None
 
 def reach_correct_angle_total(set_angle_total):
@@ -323,7 +351,6 @@ def reach_following_coordinates(coordinateList,SpeedUsed,sensetivityUsed):
 
         if (get_distance_to_coordinate(current_target)<sensetivityUsed):
             targetTReached = True
-        
     return None
 
 def setVelTunings(input_Kp, input_Ki, input_Kd):
@@ -402,6 +429,8 @@ while robotRunning:
         #test3: go [1,1]
         #reachCoordinates_constantVel(1, 1, 0.05)
 
+        #test4 go [-1,-1,-90]
+        reach_correct_distance_and_angle([-1,-1, 3*np.pi/2], 0.05, 2)
         #reach_correct_speed(0.05)
         #reach_correct_angle(np.pi*3/2)
         #reach_correct_distance(2)
