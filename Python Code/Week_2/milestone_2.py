@@ -214,9 +214,9 @@ def get_distance_moved():
     None
     '''
     global change_x, change_y, distance_travelled # Unecessary, global is needed only when the variables are changed within the function
-    if newTimeTick == True:
+    if (newTimeTick == True and (change_x!=0 or change_y!=0)):
         distance_travelled = distance_travelled + np.sqrt(change_x^2 + change_y^2) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
-    return None
+    return distance_travelled
 
 def reach_correct_speed(set_LinVel):
     '''
