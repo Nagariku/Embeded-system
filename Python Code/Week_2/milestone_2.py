@@ -9,7 +9,7 @@ Created on Tue May  3 14:28:13 2022
 testing
 Possible need to get an average of last 10 values of angular velocity/forward velocity to calculate properly
 move some things to only work when ticks are happening 
-see if timedif and timedif2 are the same: i belive they are not the same
+see if timedif and timedif2 are the same: i believe they are not the same
 make spin in correct direction
 see about negative speed and it's impact on output signal 
 same for angular velocity
@@ -112,7 +112,7 @@ def data_to_list(listToSave):
     Returns: 
     The extended list
     '''
-    global timeDif2
+    global timeDif2, newTimeTick
     time2 = time.time()   
     timeDif = time2 - time1 
   
