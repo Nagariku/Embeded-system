@@ -206,8 +206,8 @@ def get_yposition():
     else:
         change_y= 0
     return current_y
-
-def get_distance_moved():
+  
+def update_distance_moved():
     '''
     Parameter:
     None
@@ -218,10 +218,21 @@ def get_distance_moved():
     Returns: 
     None
     '''
-    global change_x, change_y, distance_travelled # Unecessary, global is needed only when the variables are changed within the function
+    global distance_travelled # Unecessary, global is needed only when the variables are changed within the function
     if (newTimeTick == True and (change_x!=0 or change_y!=0)):
         distance_travelled = distance_travelled + np.sqrt(change_x**2 + change_y**2) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
-    return distance_travelled
+    return None
+
+def update_angle_total():
+    global angle_total
+    if (max(thetaDeadReckon())-min(thetaDeadReckon))>1: # sensetivity
+        biggerTheta = -2*np.pi+max(thetaDeadReckon)
+        smallerTheta = min(thetaDeadReckon)
+        angle_total = angle_total + smallerTheta - biggerTheta
+    else:
+        angle_total = angle_total + (max(thetaDeadReckon())-min(thetaDeadReckon)) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
+    return None
+
 
 def reach_correct_speed(set_LinVel):
     '''
@@ -384,7 +395,7 @@ while robotRunning:
         aKi = 0
         aKd = 0
 
-        dKp = 0
+        dKp = 1
         dKi = 0
         dKd = 0
 
@@ -420,7 +431,8 @@ while robotRunning:
     
     forward_velocity = get_linear_velocity() 
     angular_velocity = get_angular_velocity() #* 57.29 # from radians to degrees
-    distance_travelled = get_distance_moved()
+    update_distance_moved()
+    update_angle_total()
     theta = get_current_theta()
     
     if loopCounter > 0:
