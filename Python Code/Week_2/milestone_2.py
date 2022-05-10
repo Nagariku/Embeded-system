@@ -21,6 +21,8 @@ from rolab_tb.turtlebot import Turtlebot
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import make_interp_spline
+import pands as pd
+import json
 
 #The variables
 robotRunning = True
@@ -34,10 +36,24 @@ refTickRight = None
 timeDifArray = [0,0]
 thetaDeadReckon = [0,0]
 vDeadReckon = [0,0]
-
 loopCounter = 1
 
+def data_to_csv(listToSave, csvName):
+    """
+    Works: but watch out with csv file name when rrunning the cod emultiple times
+
+    """
+    name = csvName + ".csv" #"Saved data angular"+ ".csv" # change name according to recording type
+    dict = {name: listToSave}
+    df = pd.DataFrame(dict)
+    df.to_csv(name)
+    np.savetxt(name, listToSave, delimiter =", ", fmt ='% s')
+
 def plot_this(abscissaList, ordinateList):
+    """    
+    Works
+
+    """
     abscissaList = np.asarray(abscissaList)
     ordinateList = np.asarray(ordinateList)
     B_spline_coeff = make_interp_spline(abscissaList, ordinateList)
@@ -47,9 +63,29 @@ def plot_this(abscissaList, ordinateList):
     plt.plot(X_Final, Y_Final)
     plt.ylabel('Distance to wall (m)') #set the label for y axis
     plt.xlabel('Time (s)') #set the label for x-axis
-    plt.title("Distance of wall about time") #set the title of the graph
+    plt.title("Wall proximity") #set the title of the graph
     plt.grid()
     plt.show() #display the graph
+
+def get_nearest_object():
+    """
+    Works
+    """
+
+    data = tb.get_scan()
+    data = json.loads(data) # converts string into dictionnary
+    rangesList = data["ranges"]
+    maxRange = data["range_max"]
+    minRange = data["range_min"]
+    closest_ting = maxRange    
+    
+    for i in rangesList:
+        if i != None:
+            if (i < closest_ting) and (i > minRange):
+                closest_ting = i
+            
+    return closest_ting
+
 
 def tick_to_rad(val):
     # 0.087890625[deg] * 3.14159265359 / 180 = 0.001533981f
@@ -362,6 +398,7 @@ while robotRunning:
         IMUList = []
         abscissaList = [] # for plotting graph
         ordinateList = [] # for plotting graph
+        ordinateList2 = [] # for plotting graph
         
         
         returnedList = []
@@ -401,7 +438,7 @@ while robotRunning:
         
         theta = 0
 
-        distance_travelled =0
+        distance_travelled = 0
         angle_total =0
         forward_velocity = 0
         wall_y_coordinate = 1.75
@@ -440,10 +477,14 @@ while robotRunning:
     update_distance_moved()
     update_angle_total()
     theta = get_current_theta()
-    distance_to_wall = get_distance_to_wall()
     
-    abscissaList.append(timeDif)
+    distance_to_wall = get_distance_to_wall() # distance according to the mathematical estimations. Based on the initial position and encoder ticks
+    abscissaList.append(timeDif) # total time passed, since robot started
     ordinateList.append(distance_to_wall)
+    
+    nearestObject = get_nearest_object() # distance between the robot and nearest object detected. The scan is used
+    ordinateList2.append(nearestObject)
+    
     
     if loopCounter > 1:
         x_position = update_xposition()
@@ -477,6 +518,18 @@ while robotRunning:
     #if (np.mod(relative_x)<0.025 and np.mod(relative_y)<0.025):
       #  robotRunning = False    
         
+# Saving the data plotted into a csv file
+saveThis = []
+saveThis.append(abscissaList)
+saveThis.append(ordinateList)      
+saveThis.append(ordinateList2)   
+csvName = "Data plot"    
+data_to_csv(saveThis, csvName)
+
+# Plotting the data
+plot_this(abscissaList, ordinateList)
+plot_this(abscissaList, ordinateList2)
+
 tb.stop()
         
 
