@@ -21,6 +21,9 @@ from distutils.log import error
 import time
 from rolab_tb.turtlebot import Turtlebot
 import numpy as np
+import csv
+import matplotlib.pyplot as plt
+from scipy.interpolate import make_interp_spline
 
 #The variables
 robotRunning = True
@@ -68,14 +71,12 @@ def get_linear_velocity():
         vl = tick_to_rad(leftTick - refTickLeft) * 0.066 * 0.5/timeDif # wheel diameter 66mm
         vr = tick_to_rad(rightTick - refTickRight) * 0.066 * 0.5/timeDif
         linear_vel = (vr + vl)/2
-        # ======================== CHECK ===========================
     else:
         linear_vel = 0
 
     if newTimeTick == True:
         vDeadReckon.append(linear_vel)
         vDeadReckon.pop(0)
-        # ======================== CHECK ===========================
     return linear_vel
 
 def get_angular_velocity():
@@ -321,6 +322,20 @@ def setVelTunings(input_Kp, input_Ki, input_Kd):
     vKd = input_Kd
     return None
 
+def plot_this(abscissaList, ordinateList):
+    abscissaList = np.asarray(abscissaList)
+    ordinateList = np.asarray(ordinateList)
+    B_spline_coeff = make_interp_spline(abscissaList, ordinateList)
+    X_Final = np.linspace(abscissaList.min(), abscissaList.max(),75) #choose the resolution as 5010
+    Y_Final = B_spline_coeff(X_Final)
+
+    plt.plot(X_Final, Y_Final)
+    plt.ylabel('Angular speed (rad/s)') #set the label for y axis
+    plt.xlabel('Time (s)') #set the label for x-axis
+    plt.title("Angular mvt") #set the title of the graph
+    plt.grid()
+    plt.show() #display the graph
+
 def setAngleTunings(input_Kp, input_Ki, input_Kd):
     '''
     Parameter:
@@ -358,6 +373,7 @@ def setDistanceTunings(input_Kp, input_Ki, input_Kd):
 while robotRunning:
 
     if loopCounter == 1:
+        IMUList = []
         
         returnedList = []
         tb = Turtlebot() 
@@ -411,6 +427,8 @@ while robotRunning:
     returnedList = get_tick_timeDif(returnedList)
     dataList = returnedList[0]
     timeDif = returnedList[1]
+    
+    IMUList.append(tb.get_imu())
 
     leftTick = dataList['left']
     rightTick = dataList['right']

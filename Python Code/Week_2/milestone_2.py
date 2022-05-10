@@ -21,10 +21,13 @@ from distutils.log import error
 import time
 from rolab_tb.turtlebot import Turtlebot
 import numpy as np
+import matplotlib.pyplot as plt
+from scipy.interpolate import make_interp_spline
 
 #The variables
 robotRunning = True
 newTimeTick = False
+targetTReached = False
 
 newTimeTick = False
 refTickLeft = None
@@ -34,9 +37,21 @@ timeDifArray = [0,0]
 thetaDeadReckon = [0,0]
 vDeadReckon = [0,0]
 
-loopCounter = 0
+loopCounter = 1
 
+def plot_this(abscissaList, ordinateList):
+    abscissaList = np.asarray(abscissaList)
+    ordinateList = np.asarray(ordinateList)
+    B_spline_coeff = make_interp_spline(abscissaList, ordinateList)
+    X_Final = np.linspace(abscissaList.min(), abscissaList.max(),75) #choose the resolution as 5010
+    Y_Final = B_spline_coeff(X_Final)
 
+    plt.plot(X_Final, Y_Final)
+    plt.ylabel('Angular speed (rad/s)') #set the label for y axis
+    plt.xlabel('Time (s)') #set the label for x-axis
+    plt.title("Angular mvt") #set the title of the graph
+    plt.grid()
+    plt.show() #display the graph
 
 def tick_to_rad(val):
     # 0.087890625[deg] * 3.14159265359 / 180 = 0.001533981f
@@ -65,21 +80,23 @@ def get_angular_velocity():
     return angu_vel
 
 def data_to_list(listToSave):
-    global timeDif2
+    global timeDif2, newTimeTick
     time2 = time.time()   
     timeDif = time2 - time1 
   
     timeDifArray.append(timeDif)
     timeDifArray.pop(0)
     timeDif2 = timeDifArray[1]-timeDifArray[0]
+    
     if (timeDifArray[1]-timeDifArray[0])!=0:
         newTimeTick = True
-        vDeadReckon.append(linear_vel)
+        vDeadReckon.append(forward_velocity)
         vDeadReckon.pop(0)
         thetaDeadReckon.append(theta)
         thetaDeadReckon.pop(0)
         update_angle_total()
         update_distance_moved()
+        
     else:
         newTimeTick = False
     listToSave.append(tb.get_encoder_ticks())
@@ -296,9 +313,10 @@ def reach_following_coordinates(coordinateList,SpeedUsed,sensetivityUsed):
     # case 1 = normal movement
     # case 2 = turn in 1 place
     # case 3 = fast turn + slow down   
+    global targetTReached
     while timeDif < 180:
         #update current list
-        if (loopCounter ==0 or targetTReached == True):
+        if (loopCounter == 1 or targetTReached == True):
             current_target = coordinateList[0]
             coordinateList.append(current_target)
             coordinateList.pop(0)
@@ -342,7 +360,12 @@ def setDistanceTunings(input_Kp, input_Ki, input_Kd):
     return None       
 
 while robotRunning:
-    if loopCounter == 0:
+    if loopCounter == 1:
+        IMUList = []
+        abscissaList = [] # for plotting graph
+        ordinateList = [] # for plotting graph
+        
+        
         returnedList = []
         tb = Turtlebot() 
         time1 = time.time()
@@ -409,6 +432,7 @@ while robotRunning:
     returnedList = data_to_list(returnedList)
     dataList = returnedList[0]
     timeDif = returnedList[1]
+    IMUList.append(tb.get_imu())
 
     leftTick = dataList['left']
     rightTick = dataList['right']
@@ -418,14 +442,14 @@ while robotRunning:
     update_distance_moved()
     update_angle_total()
     theta = get_current_theta()
-    distance_to_wall= get_distance_to_wall()
+    distance_to_wall = get_distance_to_wall()
     
-    if loopCounter > 0:
+    abscissaList.append(timeDif)
+    ordinateList.append(distance_to_wall)
+    
+    if loopCounter > 1:
         x_position = update_xposition()
         y_position = update_yposition()
-    else:
-        x_position =0
-        y_position = 0
     
     if loopCounter % 500 == 0:
         print("\nLinear velocity: ", str(round(forward_velocity, 5)))
