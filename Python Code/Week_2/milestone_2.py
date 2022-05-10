@@ -501,7 +501,12 @@ while robotRunning:
             
     #previousTimeDif = timeDif
     
+    if timeDif2 < 0.1:
+        sleepTime = 0.1 - timeDif2
+        time.sleep(timeDif2)
+    
     loopCounter += 1
+    
         
     #basic turn off    
     if timeDif > 10:
