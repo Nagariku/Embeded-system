@@ -65,23 +65,25 @@ def get_angular_velocity():
     return angu_vel
 
 def data_to_list(listToSave):
-    global timeDif2
+    global timeDif2,newTimeTick, vDeadReckon,thetaDeadReckon
     time2 = time.time()   
     timeDif = time2 - time1 
   
     timeDifArray.append(timeDif)
     timeDifArray.pop(0)
     timeDif2 = timeDifArray[1]-timeDifArray[0]
-    if (timeDifArray[1]-timeDifArray[0])!=0:
+    if ((timeDifArray[1]-timeDifArray[0])!=0):
         newTimeTick = True
-        vDeadReckon.append(linear_vel)
+        vDeadReckon.append(forward_velocity)
         vDeadReckon.pop(0)
         thetaDeadReckon.append(theta)
         thetaDeadReckon.pop(0)
-        update_angle_total()
-        update_distance_moved()
-    else:
+        #update_angle_total()
+        #update_distance_moved()
+    else:    
         newTimeTick = False
+    #thetaDeadReckon.append(theta)
+    #thetaDeadReckon.pop(0)
     listToSave.append(tb.get_encoder_ticks())
     listToSave.append(timeDif)
     
@@ -160,18 +162,18 @@ def get_coordinates_behind_point_angle(inputCoordListSmall,distanceBehind):
 
 def update_distance_moved():
     global distance_travelled # Unecessary, global is needed only when the variables are changed within the function
-    if (newTimeTick == True and (change_x!=0 or change_y!=0)):
-        distance_travelled = distance_travelled + np.sqrt(change_x**2 + change_y**2) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
+    #if (newTimeTick == True ): # and (change_x!=0 or change_y!=0)
+    distance_travelled = distance_travelled + np.sqrt(change_x**2 + change_y**2) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
     return None
 
 def update_angle_total():
     global angle_total
-    if (max(thetaDeadReckon())-min(thetaDeadReckon))>1: # sensetivity
+    if ((max(thetaDeadReckon)-min(thetaDeadReckon))>1): # sensetivity
         biggerTheta = -2*np.pi+max(thetaDeadReckon)
         smallerTheta = min(thetaDeadReckon)
         angle_total = angle_total + smallerTheta - biggerTheta
     else:
-        angle_total = angle_total + (max(thetaDeadReckon())-min(thetaDeadReckon)) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
+        angle_total = angle_total + (max(thetaDeadReckon)-min(thetaDeadReckon)) # Euclidian distance assumes the distance traveled is the shortest one (no curves, turns etc)
     return None
 
 def update_xposition():
@@ -198,13 +200,18 @@ def reach_correct_speed(set_LinVel):
     global vLastErr, vErrSum
     #Compute all the working error variables
     prop_error = set_LinVel - forward_velocity
-    vErrSum = vErrSum + prop_error*timeDif2
-    errDer = (prop_error-vLastErr)/timeDif2
+   # if (timeDif2 != 0):
+    #    vErrSum = vErrSum + prop_error*timeDif2
+    #    errDer = (prop_error-vLastErr)/timeDif2
+    #else:
+    #    errDer = 0
     #Compute PID Output
-    out_signal = vKp * prop_error + vKi * vErrSum + errDer*vKd
+    out_signal = vKp * prop_error #+ vKi * vErrSum + errDer*vKd
     #Remember some variables for next time
-    vLastErr = error
+    #print (out_signal)
+    #vLastErr = error
     final_signal = set_LinVel+out_signal
+    #print (final_signal)
     if (final_signal >0.22):
         final_signal  = 0.215
     tb.set_control_inputs(final_signal, 0) # set control input {lin-vel: out_signal, ang-vel:0}
@@ -216,15 +223,16 @@ def reach_correct_angle(set_angle):
     return None
 
 def reach_correct_distance(set_distance):
-
     global dLastErr, dErrSum
     #Compute all the working error variables
     prop_error = set_distance - distance_travelled
     if (timeDif2 != 0):
-        dErrSum = dErrSum + prop_error*timeDif2
+      #  dErrSum = dErrSum + prop_error*timeDif2
         errDer = (prop_error-dLastErr)/timeDif2
+    else:
+        errDer = 0
     #Compute PID Output
-    out_signal = dKp * prop_error + dKi * dErrSum + errDer*dKd
+    out_signal = dKp * prop_error + dKi * dErrSum #+ errDer*dKd
     #Remember some variables for next time
     dLastErr = prop_error
     if (out_signal>0.22):
@@ -239,6 +247,7 @@ def reach_correct_distance_and_angle(inputCoordList, constVel, dist):
     #3
     global thetaTargetAngle
     targetTReached = False
+    finalReached = False
     listOfSeqCoord = []
     thetaTargetAngle = inputCoordList [2] 
     numAcc = 3 #number of accuracy, higher = better, too high = oscilations
@@ -246,7 +255,7 @@ def reach_correct_distance_and_angle(inputCoordList, constVel, dist):
     for n in range(0, numAcc+1, 1) :
         distanceBeh = dist - n*distSplit
         listOfSeqCoord.append(get_coordinates_behind_point_angle(inputCoordList, distanceBeh))
-    while (timeDif< 120 or finalReached ==False):
+    while (timeDif< 120 and finalReached ==False):
         if (loopCounter ==0 or targetTReached == True):
             if (len(listOfSeqCoord)==0):
                 finalReached = True
@@ -264,14 +273,16 @@ def reach_correct_angle_total(set_angle_total):
     global aLastErr, aErrSum
     #Compute all the working error variables
     prop_error = set_angle_total - angle_total
-    aErrSum = aErrSum + prop_error*timeDif2
-    errDer = (prop_error-aLastErr)/timeDif2
+    #aErrSum = aErrSum + prop_error*timeDif2
+    #errDer = (prop_error-aLastErr)/timeDif2
     #Compute PID Output
-    out_signal = aKp * prop_error + aKi * aErrSum + errDer*aKd
+    out_signal = aKp * prop_error # aKi * aErrSum + errDer*aKd
     #Remember some variables for next time
-    aLastErr = error
-    if (out_signal>2.84):
-        out_signal = 2.795
+    #aLastErr = error
+    if (out_signal>2.7):
+        out_signal = 2.65 
+    if (out_signal<-2.75):
+        out_signal = -2.65 
     tb.set_control_inputs(0, out_signal) # set control input {lin-vel: out_signal, ang-vel:0}
     # MAKE IT STOP ON TIME
     return None
@@ -280,7 +291,6 @@ def reach_correct_angle_signal(set_angle):
     global aLastErr, aErrSum
     #Compute all the working error variables
     prop_error = set_angle - theta
-
     #deciding direction of angV
     if (prop_error ==0 or np.pi):
         turnRight = 1
@@ -300,22 +310,26 @@ def reach_correct_angle_signal(set_angle):
 
     if prop_error > np.pi:
         correct_prop_error = 2*np.pi-prop_error
-    if prop_error < 0:
+    elif prop_error < 0:
         correct_prop_error = 2*np.pi+prop_error
+    else:
+        correct_prop_error = prop_error
 
-    aErrSum = aErrSum + correct_prop_error*timeDif2
-    errDer = (correct_prop_error-aLastErr)/timeDif2
+   # aErrSum = aErrSum + correct_prop_error*timeDif2
+   # errDer = (correct_prop_error-aLastErr)/timeDif2
     #Compute PID Output
-    out_signal = aKp * correct_prop_error + aKi * aErrSum + errDer*aKd
+    out_signal = aKp * correct_prop_error #+ aKi * aErrSum + errDer*aKd
     #Remember some variables for next time
-    aLastErr = error
+    #aLastErr = error
     if (out_signal>2.7):
         out_signal = 2.65 
     if (out_signal<-2.75):
         out_signal = -2.65 
     direct_adj_signal = out_signal*turnRight
     #tb.set_control_inputs(0, out_signal) # set control input {lin-vel: 0, ang-vel: out_signal}
-    return out_signal
+    #if (newTimeTick==True):  
+    print (direct_adj_signal)
+    return direct_adj_signal
 
 def reachCoordinates_constantVel(input_x, input_y,constSpeed):
     #determination of direction
@@ -329,7 +343,8 @@ def reach_following_coordinates(coordinateList,SpeedUsed,sensetivityUsed):
     #infinnite loop of following
     # case 1 = normal movement
     # case 2 = turn in 1 place
-    # case 3 = fast turn + slow down   
+    # case 3 = fast turn + slow down 
+    targetTReached = False
     while timeDif < 180:
         #update current list
         if (loopCounter ==0 or targetTReached == True):
@@ -390,17 +405,17 @@ while robotRunning:
         change_x= 0
         change_y = 0
 
-        vKp = 1.2
+        vKp = 0.75
         vKi = 2.85
         vKd = 0.126
 
-        aKp = 0.3
+        aKp = 0.03
         aKi = 0
         aKd = 0
 
-        dKp = 1
+        dKp = 0.1
         dKi = 0
-        dKd = 0
+        dKd = 0.126
 
         vErrSum = 0
         vLastErr = 0
@@ -430,8 +445,8 @@ while robotRunning:
         #reachCoordinates_constantVel(1, 1, 0.05)
 
         #test4 go [-1,-1,-90]
-        reach_correct_distance_and_angle([-1,-1, 3*np.pi/2], 0.05, 2)
-        #reach_correct_speed(0.05)
+        #reach_correct_distance_and_angle([-1,-1, 3*np.pi/2], 0.05, 2)
+        #reach_correct_speed(0.05/2)
         #reach_correct_angle(np.pi*3/2)
         #reach_correct_distance(2)
 
@@ -461,22 +476,29 @@ while robotRunning:
     else:
         x_position =0
         y_position = 0
-    
+        
+    #reach_correct_speed(0.05)    
+    #reach_correct_angle(7*np.pi/8)
+   # reach_correct_distance(2)
+    #test1: do a 360
+    reach_correct_angle_total(2*np.pi)
+    #
     if loopCounter % 500 == 0:
-        print("\nLinear velocity: ", str(round(forward_velocity, 5)))
-        print("Angular velicity: ", str(round(angular_velocity, 5)))
-        print("Angle: ", str(round(theta/2/np.pi*360, 5)))
-        print("x position: ", str(round(x_position,5)))
-        print("y position: ", str(round(y_position,5)))
-        print("total distance travelled", str(round(distance_travelled,5)))
-        print("total angular displacement", str(round(distance_travelled,5)))
+    #    print("\nLinear velocity: ", str(round(forward_velocity, 5)))
+      #  print("Angular velicity: ", str(round(angular_velocity, 5)))
+    #    print("Angle: ", str(round(theta/2/np.pi*360, 5)))
+     #   print("x position: ", str(round(x_position,5)))
+     #   print("y position: ", str(round(y_position,5)))
+       # print("total distance travelled", str(round(distance_travelled,5)))
+        print("total angular displacement", str(round(angle_total,5)))
             
     #previousTimeDif = timeDif
     
     loopCounter += 1
         
     #basic turn off    
-    if timeDif > 10:
+    if timeDif > 30:
+        print (theta)
         robotRunning = False
 
     #turn off SISO#1
@@ -484,8 +506,8 @@ while robotRunning:
         #robotRunning = False
 
     #turn off SISO#2
-  #  if distance_travelled>2.03:
-  #      robotRunning = False 
+    if distance_travelled>2.03:
+       robotRunning = False 
     #turn of SISO#3
     #if (np.mod(relative_x)<0.025 and np.mod(relative_y)<0.025):
       #  robotRunning = False    
