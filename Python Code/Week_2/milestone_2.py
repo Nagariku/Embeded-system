@@ -47,9 +47,9 @@ def plot_this(abscissaList, ordinateList):
     Y_Final = B_spline_coeff(X_Final)
 
     plt.plot(X_Final, Y_Final)
-    plt.ylabel('Angular speed (rad/s)') #set the label for y axis
+    plt.ylabel('Distance to wall (m)') #set the label for y axis
     plt.xlabel('Time (s)') #set the label for x-axis
-    plt.title("Angular mvt") #set the title of the graph
+    plt.title("Distance of wall about time") #set the title of the graph
     plt.grid()
     plt.show() #display the graph
 
