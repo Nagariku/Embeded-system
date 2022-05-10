@@ -13,8 +13,6 @@ see if timedif and timedif2 are the same: i believe they are not the same
 make spin in correct direction
 see about negative speed and it's impact on output signal 
 same for angular velocity
-Corentin:
-Limitation of current controller: cannot move linearly and turn simultaneously (see def reach_correct_speed(set_LinVel) and other)
 """
 
 from distutils.log import error
