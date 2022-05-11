@@ -285,7 +285,6 @@ def p_controller_speed_signalExp(set_LinVel):
     global_velocity_signal = vKp * prop_error + vKi * vErrAverage +  vKd* errorDerivative
 
     #set up variables for next time
-    vLastErr = prop_error
     vErrorList.pop(0)
     vErrorList.append(prop_error)
     vTimeDifferences.pop(0)
