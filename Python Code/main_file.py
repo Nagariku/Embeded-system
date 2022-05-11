@@ -10,6 +10,10 @@ from distutils.log import error
 import time
 from rolab_tb.turtlebot import Turtlebot
 import numpy as np
+import matplotlib.pyplot as plt
+from scipy.interpolate import make_interp_spline
+import pands as pd
+import json
 
 #coordinates are [x,y] or [x,y,theta]
 #x and y are in meters
@@ -20,22 +24,6 @@ import numpy as np
 #p_controller_theta_travelled_angle_velocity_signal with higher speeds
 
 ###Getters
-def get_tick_value_in_rad(inputEncoderTick):
-    '''
-    Converts the encoders ticks into radians using x*input where input is 001533981f (0.087890625[deg] * 3.14159265359 / 180 )
-
-            Parameters:
-                    tickInDegrees (int): An endocder integer in
-
-            Returns:
-                    tickInRad (float): Encoder input tick converted to radians
-
-            Notes:
-                    2^12 = 4096 ticks/revolution
-    '''
-    tickInRad = inputEncoderTick * 0.001533981 
-    return tickInRad
-
 def get_data_to_list(listToSave):
     '''
     Calculates current angular velocity from 2 global tick values - from top of robot clockwise is negative, anticlockwise is possitive
@@ -71,6 +59,22 @@ def get_data_to_list(listToSave):
     
     return listToSave
 
+def get_tick_value_in_rad(inputEncoderTick):
+    '''
+    Converts the encoders ticks into radians using x*input where input is 001533981f (0.087890625[deg] * 3.14159265359 / 180 )
+
+            Parameters:
+                    tickInDegrees (int): An endocder integer in
+
+            Returns:
+                    tickInRad (float): Encoder input tick converted to radians
+
+            Notes:
+                    2^12 = 4096 ticks/revolution
+    '''
+    tickInRad = inputEncoderTick * 0.001533981 
+    return tickInRad
+
 def get_current_theta():
     global DeadReckon_List_theta, theta
     right_tick_relative = rightTickCurrent - refTickRight
@@ -88,7 +92,7 @@ def get_current_theta():
         theta = 0
     return theta
 
-def get_DeadReckon_v_and_angle_averages():
+def get_deadreckon_v_and_angle_averages():
     #correction to prevent negative angle fuckery
     averageSpeed = (DeadReckon_List_vel[1]+DeadReckon_List_vel[0])/2
     averageTheta = (DeadReckon_List_theta[1] + DeadReckon_List_theta[0])/2
@@ -143,6 +147,24 @@ def get_coordinates_behind_point_angle(inputCoordListAngle,distanceBehind):
     out_coord_y = inputCoordListAngle[1] + distanceBehind * np.sin(inputCoordListAngle[2])
     return out_coord_x, out_coord_y
 
+def get_nearest_object():
+    """
+    Works
+    """
+    data = tb.get_scan()
+    data = json.loads(data) # converts string into dictionnary
+    rangesList = data["ranges"]
+    maxRange = data["range_max"]
+    minRange = data["range_min"]
+    closest_ting = maxRange    
+    
+    for i in rangesList:
+        if i != None:
+            if (i < closest_ting) and (i > minRange):
+                closest_ting = i
+            
+    return closest_ting
+
 ###Updaters
 def update_current_linear_velocity():
     '''
@@ -194,17 +216,27 @@ def update_theta_travelled():
 
 def update_xposition():
     global change_x
-    vAverageTick, thetaAverageTick = get_DeadReckon_v_and_angle_averages()
+    vAverageTick, thetaAverageTick = get_deadreckon_v_and_angle_averages()
     change_x = vAverageTick*np.cos(thetaAverageTick)*(timeChange_2lastUpdates) # error appearing when speed is not constant
     current_xCalc = current_x + change_x
     return current_xCalc
 
 def update_yposition():
     global change_y
-    vAverageTick, thetaAverageTick = get_DeadReckon_v_and_angle_averages()
+    vAverageTick, thetaAverageTick = get_deadreckon_v_and_angle_averages()
     change_y = vAverageTick*np.sin(thetaAverageTick)*(timeChange_2lastUpdates) # error appearing when speed is not constant
     current_yCalc = current_y + change_y
     return current_yCalc
+
+def update_yposition_data_to_csv(listToSave, csvName):
+    """
+    Works: but watch out with csv file name when rrunning the cod emultiple times
+    """
+    name = csvName + ".csv" #"Saved data angular"+ ".csv" # change name according to recording type
+    dict = {name: listToSave}
+    df = pd.DataFrame(dict)
+    df.to_csv(name)
+    np.savetxt(name, listToSave, delimiter =", ", fmt ='% s')
 
 ###P controllers
 def p_controller_speed_signal(set_LinVel):
@@ -236,8 +268,10 @@ def p_controller_angle_signal(set_angle):
 
     if prop_error > np.pi:
         correct_prop_error = np.pi*2-prop_error
-    elif prop_error < 0:
-        correct_prop_error = -prop_error 
+    elif (prop_error < -np.pi):
+        correct_prop_error =  2*np.pi+prop_error
+    elif (prop_error < 0):
+        correct_prop_error =  -prop_error
     else:
         correct_prop_error = prop_error
 
@@ -270,7 +304,6 @@ def p_controller_theta_travelled_angle_velocity_signal(set_angle_total):
 def p_controller_speed_signalExp(set_LinVel):
     #initialise varaiables
     global global_velocity_signal
-
 
     #Calculatre error
     prop_error = set_LinVel - forward_velocity
@@ -435,6 +468,24 @@ def reach_following_coordinates(inCoordinateList,inSpeedUsed,sensetivityUsed):
 
     return None
 
+###Outputs
+def ouput_plot(abscissaList, ordinateList):
+    """    
+    Works
+    """
+    abscissaList = np.asarray(abscissaList)
+    ordinateList = np.asarray(ordinateList)
+    B_spline_coeff = make_interp_spline(abscissaList, ordinateList)
+    X_Final = np.linspace(abscissaList.min(), abscissaList.max(),75) #choose the resolution as 5010
+    Y_Final = B_spline_coeff(X_Final)
+
+    plt.plot(X_Final, Y_Final)
+    plt.ylabel('Distance to wall (m)') #set the label for y axis
+    plt.xlabel('Time (s)') #set the label for x-axis
+    plt.title("Wall proximity") #set the title of the graph
+    plt.grid()
+    plt.show() #display the graph
+
 ######################################
 ###Initialising variables
 ##aka don't touch these or program won't work
@@ -467,6 +518,13 @@ angle_total =0
 forward_velocity = 0
 angular_velocity = 0
 global_velocity_signal = 0
+
+
+#Graph plotting CORY
+IMUList = []
+abscissaList = [] # for plotting graph
+ordinateList = [] # for plotting graph
+ordinateList2 = [] # for plotting graph
 
 ###################################
 ###Editable variables
@@ -533,22 +591,32 @@ MIMO_in_1_1_velocity = 0.05 #m/s
 
 ######################
 ### Main program
-while robotRunning:
-    if globalLoopCounter == 0:
-        timeatStart = time.time()
-        returnedList = get_data_to_list(returnedList)
-        dataList = returnedList[0]
-        timeFromStart = returnedList[1] 
-        refTickLeft = dataList['left']
-        refTickRight = dataList['right']
 
+# initialisation 
+timeatStart = time.time()
+returnedList = get_data_to_list(returnedList)
+dataList = returnedList[0]
+timeFromStart = returnedList[1] 
+refTickLeft = dataList['left']
+refTickRight = dataList['right']
+
+###loop
+while robotRunning:
+    ###get data
     returnedList = []
     returnedList = get_data_to_list(returnedList)
     dataList = returnedList[0]
     timeFromStart = returnedList[1]
     leftTickCurrent = dataList['left']
     rightTickCurrent = dataList['right']
-    
+
+    ###Graph stuff
+    IMUList.append(tb.get_imu())
+    abscissaList.append(timeFromStart)
+    ordinateList.append(distance_to_wall)
+    nearestObject = get_nearest_object() # distance between the robot and nearest object detected. The scan is used
+    ordinateList2.append(nearestObject)
+
     #code only changes when tick happens
     if (timeTickUpdate_bool==True):
         #get updates
@@ -576,7 +644,6 @@ while robotRunning:
         print("total distance travelled", str(round(distance_travelled,5)))
         print("total angular displacement", str(round(angle_total,5)))
          
-
     #basic turn off    
     if timeFromStart > 20:
         robotRunning = False
@@ -585,8 +652,19 @@ while robotRunning:
 
 
 
-    globalLoopCounter += 1    
+    globalLoopCounter += 1
 tb.stop()
         
+###outputs when out ofloop
+saveThis = []
+saveThis.append(abscissaList)
+saveThis.append(ordinateList)      
+saveThis.append(ordinateList2)   
+csvName = "Data plot"    
+data_to_csv(saveThis, csvName)
+
+# Plotting the data
+plot_this(abscissaList, ordinateList)
+plot_this(abscissaList, ordinateList2)
 
     
