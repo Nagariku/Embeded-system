@@ -236,8 +236,10 @@ def p_controller_angle_signal(set_angle):
 
     if prop_error > np.pi:
         correct_prop_error = np.pi*2-prop_error
-    elif prop_error < 0:
-        correct_prop_error = -prop_error 
+    elif (prop_error < -np.pi):
+        correct_prop_error =  2*np.pi+prop_error
+    elif (prop_error < 0):
+        correct_prop_error =  -prop_error
     else:
         correct_prop_error = prop_error
 
