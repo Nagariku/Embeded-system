@@ -269,17 +269,18 @@ def p_controller_theta_travelled_angle_velocity_signal(set_angle_total):
 ###P controllers - experimental
 def p_controller_speed_signalExp(set_LinVel):
     #initialise varaiables
-    global vLastErr, vErrSum, global_velocity_signal
+    global global_velocity_signal
 
 
     #Calculatre error
     prop_error = set_LinVel - forward_velocity
 
     #calculate variables
+    vLastErr = aErrorList[len(aErrorList)-1]
     errorDerivative = (prop_error - vLastErr)/timeChange_2lastUpdates
     vErrAverage = sum(vErrorList)/len(vErrorList)
     vErrSum = vErrAverage * sum(vTimeDifferences)
-    out_signal = vKp * prop_error + vKi * vErrAverage + errorDerivative*vKd
+    out_signal = vKp * prop_error + vKi * vErrAverage +  vKd* errorDerivative
 
     #set up variables for next time
     vLastErr = prop_error
@@ -296,9 +297,6 @@ def p_controller_speed_signalExp(set_LinVel):
     return global_velocity_signal
 
 def p_controller_angle_signalExp(set_angle):
-    #initialise varaiables
-    global aLastErr, aErrSum 
-
     #calculate error
     prop_error = set_angle - theta
 
@@ -320,20 +318,24 @@ def p_controller_angle_signalExp(set_angle):
 
     if prop_error > np.pi:
         correct_prop_error = np.pi*2-prop_error
-    elif prop_error < 0:
-        correct_prop_error = -prop_error #2*np.pi+
+    elif (prop_error < -np.pi):
+        correct_prop_error =  2*np.pi+prop_error
+    elif (prop_error < 0):
+        correct_prop_error =  -prop_error
     else:
         correct_prop_error = prop_error
 
+    #reset 2 lists on reach
+
     #calculate signal
-    errorDerivative = (prop_error - aLastErr)/timeChange_2lastUpdates
+    aLastErr = aErrorList[len(aErrorList)-1]
+    errorDerivative = (correct_prop_error- aLastErr)/timeChange_2lastUpdates
     aErrAverage = sum(aErrorList)/len(aErrorList)
     aErrSum = aErrAverage * sum(aTimeDifferences)
-
+    
     out_signal = aKp * correct_prop_error + aKi*aErrSum + aKd *errorDerivative  
 
     #variable calculation for later
-    aLastErr = correct_prop_error
     aErrorList.pop(0)
     aErrorList.append(correct_prop_error)
     aTimeDifferences.pop(0)
@@ -346,42 +348,6 @@ def p_controller_angle_signalExp(set_angle):
         out_signal = -2.65 
     direct_adj_signal = out_signal*turnRight
     return direct_adj_signal
-
-def p_controller_distance_travelled_forward_velocity_signalExp(set_distance):
-    global dLastErr, dErrSum
-    #Compute all the working error variables
-    prop_error = set_distance - distance_travelled
-    if (timeChange_2lastUpdates != 0):
-      #  dErrSum = dErrSum + prop_error*timeChange_2lastUpdates
-        errDer = (prop_error-dLastErr)/timeChange_2lastUpdates
-    else:
-        errDer = 0
-    #Compute PID Output
-    out_signal = dKp * prop_error #+ dKi * dErrSum #+ errDer*dKd
-    #Remember some variables for next time
-    dLastErr = prop_error
-    if (out_signal>0.22):
-        out_signal = 0.215
-    tb.set_control_inputs(out_signal, 0) # set control input {lin-vel: out_signal, ang-vel:0}
-    return None
-
-def p_controller_theta_travelled_angle_velocity_signalExp(set_angle_total):
-    global aLastErr, aErrSum
-    #Compute all the working error variables
-    prop_error = set_angle_total - angle_total
-    #aErrSum = aErrSum + prop_error*timeChange_2lastUpdates
-    #errDer = (prop_error-aLastErr)/timeChange_2lastUpdates
-    #Compute PID Output
-    out_signal = aDKp * prop_error # aDKi * aErrSum + errDer*aDKd
-    #Remember some variables for next time
-    #aLastErr = error
-    if (out_signal>0.5):
-        out_signal = 0.4 
-    if (out_signal<-0.5):
-        out_signal = -0.4 
-    tb.set_control_inputs(0, out_signal) # set control input {lin-vel: out_signal, ang-vel:0}
-    # MAKE IT STOP ON TIME
-    return None
 
 ###Calculations and actuators
 def reach_forward_speed(inputForwVel):
@@ -413,18 +379,19 @@ def reach_coordinates_constantVelocity(inputCoordList,constSpeed):
 def reach_coordinates_and_angle(inputCoordList, constVel, distanceBehindPoint, inputNumPoints):
     global targetReachedFinalSISO,listOfSeqCoords, currentCoordTargetSISO
     sensetivityDist = 0.05
-    if (globalGlobalLoopCounter == 0):
+    if (globalLoopCounter == 0):
         #desired theta is inputCoordList[2]
         targetReachedFinalSISO = False
         distSplit = distanceBehindPoint/inputNumPoints
         for i in range(0,inputNumPoints+1,1):
             distanceBehind_itterative = distanceBehindPoint - i*distSplit
             listOfSeqCoord.append(get_coordinates_behind_point_angle(inputCoordList, distanceBehind_itterative,thetaTargetAngle))
-     
         if (get_distance_to_coordinate(listOfSeqCoord[0])<sensetivityDist):
             listOfSeqCoords.pop(0)
             if (len(listOfSeqCoords)>0):
                 currentCoordTargetSISO = listOfSeqCoords[0]
+                aErrorList = np.zeros(4)
+                aTimeDifferences = np.zeros(4)
             else:
                 targetReachedFinalSISO = True
                 return None
@@ -439,15 +406,18 @@ def reach_following_coordinates(inCoordinateList,inSpeedUsed,sensetivityUsed):
     ###calculator part
     global  currentCoordTargetMIMO, infCoordList #targetReachedMIMO
     sensetivityDist = 0.05
-    if (len(inCoordinateList)<2):
-        print ("Insufficient coordinates")
-        return None
-    if (globalGlobalLoopCounter == 0):
+
+    if (globalLoopCounter == 0):
         infCoordList = inCoordinateList
         currentCoordTargetMIMO = infCoordList[0]
+        if (len(inCoordinateList)<2):
+            print ("Insufficient coordinates")
+        return None
     if (get_distance_to_coordinate(infCoordList[0])<sensetivityUsed):
         infCoordList.append(currentCoordTargetMIMO)
         infCoordList.pop(0)
+        aErrorList = np.zeros(4)
+        aTimeDifferences = np.zeros(4)
 
     currentCoordTargetMIMO = infCoordList[0]
     targetting_angle = get_perfect_angle_to_next_coord_from_current_position(currentCoordTargetMIMO)
@@ -482,7 +452,7 @@ DeadReckon_List_vel = [0,0]
 returnedList = []
 
 #integers
-globalGlobalLoopCounter = 0
+globalLoopCounter = 0
 refTickLeft = 0 #was None before
 refTickRight = 0 #was None before
 
@@ -511,17 +481,17 @@ vKi = 2.85
 vKd = 0.126
 vErrSum = 0
 vLastErr = 0
-vErrorList = [0,0,0,0]
-vTimeDifferences = [0,0,0,0]
+vErrorList = np.zeros(4)
+vTimeDifferences = np.zeros(4)
 
 #angular controls
 aKp = 0.6 #0.35
-aKi = 3
+aKi = 2.85
 aKd = 0.126
 aErrSum = 0
 aLstErr = 0
-aErrorList = [0,0,0,0]
-aTimeDifferences = [0,0,0,0]
+aErrorList = np.zeros(4)
+aTimeDifferences = np.zeros(4)
 
 #distance travelled controls
 dKp = 0.1
