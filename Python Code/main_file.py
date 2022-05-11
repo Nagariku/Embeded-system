@@ -221,7 +221,7 @@ def p_controller_angle_signal(set_angle):
     if (prop_error ==0 or np.pi):
         turnRight = 1
         #cause why not, no need to make it an RNG
-    if (set_angle>np.pi):
+    elif (set_angle>np.pi):
         bigOpposite = set_angle-np.pi
         if (theta>bigOpposite and theta<set_angle):
             turnRight = 1
@@ -268,35 +268,44 @@ def p_controller_theta_travelled_angle_velocity_signal(set_angle_total):
 
 ###P controllers - experimental
 def p_controller_speed_signalExp(set_LinVel):
-    global vLastErr, vErrSum
-    #Compute all the working error variables
+    #initialise varaiables
+    global vLastErr, vErrSum, global_velocity_signal
+
+
+    #Calculatre error
     prop_error = set_LinVel - forward_velocity
-   # if (timeChange_2lastUpdates != 0):
-    #    vErrSum = vErrSum + prop_error*timeChange_2lastUpdates
-    #    errDer = (prop_error-vLastErr)/timeChange_2lastUpdates
-    #else:
-    #    errDer = 0
-    #Compute PID Output
-    out_signal = vKp * prop_error #+ vKi * vErrSum + errDer*vKd
-    #Remember some variables for next time
-    #print (out_signal)
-    #vLastErr = error
-    final_signal = set_LinVel+out_signal
-    #print (final_signal)
-    if (final_signal >0.22):
-        final_signal  = 0.215
-    tb.set_control_inputs(final_signal, 0) # set control input {lin-vel: out_signal, ang-vel:0}
-    return None
+
+    #calculate variables
+    errorDerivative = (prop_error - vLastErr)/timeChange_2lastUpdates
+    vErrAverage = sum(vErrorList)/len(vErrorList)
+    vErrSum = vErrAverage * sum(vTimeDifferences)
+    out_signal = vKp * prop_error + vKi * vErrAverage + errorDerivative*vKd
+
+    #set up variables for next time
+    vLastErr = prop_error
+    vErrorList.pop(0)
+    vErrorList.append(prop_error)
+    vTimeDifferences.pop(0)
+    vTimeDifferences.append(timeChange_2lastUpdates)
+
+    #outputting the stuff
+    if (global_velocity_signal >0.22):
+        global_velocity_signal  = 0.215
+    elif (global_velocity_signal <-0.22):
+        global_velocity_signal  = -0.215
+    return global_velocity_signal
 
 def p_controller_angle_signalExp(set_angle):
-    global aLastErr, aErrSum
-    #Compute all the working error variables
+    #initialise varaiables
+    global aLastErr, aErrSum 
+
+    #calculate error
     prop_error = set_angle - theta
-    #deciding direction of angV
+
     if (prop_error ==0 or np.pi):
         turnRight = 1
         #cause why not, no need to make it an RNG
-    if (set_angle>np.pi):
+    elif (set_angle>np.pi):
         bigOpposite = set_angle-np.pi
         if (theta>bigOpposite and theta<set_angle):
             turnRight = 1
@@ -316,20 +325,26 @@ def p_controller_angle_signalExp(set_angle):
     else:
         correct_prop_error = prop_error
 
-   # aErrSum = aErrSum + correct_prop_error*timeChange_2lastUpdates
-   # errDer = (correct_prop_error-aLastErr)/timeChange_2lastUpdates
-    #Compute PID Output
-    out_signal = aKp * correct_prop_error #+ aKi * aErrSum + errDer*aKd
-    #Remember some variables for next time
-    #aLastErr = error
+    #calculate signal
+    errorDerivative = (prop_error - aLastErr)/timeChange_2lastUpdates
+    aErrAverage = sum(aErrorList)/len(aErrorList)
+    aErrSum = aErrAverage * sum(aTimeDifferences)
+
+    out_signal = aKp * correct_prop_error + aKi*aErrSum + aKd *errorDerivative  
+
+    #variable calculation for later
+    aLastErr = correct_prop_error
+    aErrorList.pop(0)
+    aErrorList.append(correct_prop_error)
+    aTimeDifferences.pop(0)
+    aTimeDifferences.append(timeChange_2lastUpdates)
+
+    #outputting stuff
     if (out_signal>2.7):
         out_signal = 2.65 
-    if (out_signal<-2.75):
+    elif (out_signal<-2.75):
         out_signal = -2.65 
     direct_adj_signal = out_signal*turnRight
-    #tb.set_control_inputs(0, out_signal) # set control input {lin-vel: 0, ang-vel: out_signal}
-    #if (timeTickUpdate_bool==True):  
-    #print (direct_adj_signal)
     return direct_adj_signal
 
 def p_controller_distance_travelled_forward_velocity_signalExp(set_distance):
@@ -371,18 +386,22 @@ def p_controller_theta_travelled_angle_velocity_signalExp(set_angle_total):
 ###Calculations and actuators
 def reach_forward_speed(inputForwVel):
     tb.set_control_inputs(p_controller_speed_signal(inputForwVel), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
+    #tb.set_control_inputs(p_controller_speed_signalExp(inputForwVel), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
     return None
 
 def reach_correct_angle_0_forward_vel(set_angle):
     tb.set_control_inputs(0, p_controller_angle_signal(set_angle)) # set control input {lin-vel: 0, ang-vel: out_signal}
+    tb.set_control_inputs(0, p_controller_angle_signalExp(set_angle)) # set control input {lin-vel: 0, ang-vel: out_signal}
     return None
 
 def reach_theta_travelled_0_forward_vel(total_theta_wanted):
     tb.set_control_inputs(p_controller_theta_travelled_angle_velocity_signal(total_theta_wanted), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
+    #tb.set_control_inputs(p_controller_theta_travelled_angle_velocity_signalExp(total_theta_wanted), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
     return None
 
 def reach_distance_0_angular_vel(inputDistance):
-    tb.set_control_inputs(0.1, p_controller_distance_travelled_forward_velocity_signal(inputDistance)) # set control input {lin-vel: 0.1, ang-vel:0} 
+    tb.set_control_inputs(0.1, p_controller_distance_travelled_forward_velocity_signal(inputDistance)) # set control input {lin-vel: 0.1, ang-vel:0}
+    tb.set_control_inputs(0.1, p_controller_distance_travelled_forward_velocity_signalExp(set_distance)(inputDistance)) # set control input {lin-vel: 0.1, ang-vel:0}  
     return None
 
 def reach_coordinates_constantVelocity(inputCoordList,constSpeed):
@@ -466,6 +485,7 @@ returnedList = []
 globalGlobalLoopCounter = 0
 refTickLeft = 0 #was None before
 refTickRight = 0 #was None before
+
 #floats     
 current_x = 0
 current_y = 0
@@ -476,10 +496,13 @@ distance_travelled =0
 angle_total =0
 forward_velocity = 0
 angular_velocity = 0
+global_velocity_signal = 0
 
 ###################################
 ###Editable variables
 ##aka edit them to change behaviour
+
+
 
 #PID controlls
 #velocity controlls
@@ -488,13 +511,17 @@ vKi = 2.85
 vKd = 0.126
 vErrSum = 0
 vLastErr = 0
+vErrorList = [0,0,0,0]
+vTimeDifferences = [0,0,0,0]
 
 #angular controls
 aKp = 0.6 #0.35
-aKi = 0
-aKd = 0
+aKi = 3
+aKd = 0.126
 aErrSum = 0
 aLstErr = 0
+aErrorList = [0,0,0,0]
+aTimeDifferences = [0,0,0,0]
 
 #distance travelled controls
 dKp = 0.1
