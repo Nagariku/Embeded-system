@@ -1,0 +1,50 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed May 11 2022
+@author: nagariku and Cory
+"""
+
+
+###functions to be put in here
+# paste them under "current function being completed"
+
+##Set up tests
+#1
+reach_correct_angle_0_forward_vel(testAngle)
+#2
+reach_forward_speed(testSpeed)
+
+##SISO 1.1
+reach_theta_travelled_0_forward_vel(SISO_in_1_1)
+##SISO 1.2
+reach_distance_0_angular_vel(SISO_in_1_2)
+##SISO 1.3
+reach_coordinates_constantVelocity(SISO_in_1_3_list,constSpeed)
+##SISO 1.4
+reach_following_coordinates(SISO_in_1_4_list,SISO_in_1_4_velocity, SISO_in_1_4_distance, SISO_in_1_4_numPoints)
+##MIMO 2.1
+reach_following_coordinates(MIMO_in_1_1_list,MIMO_in_1_1_velocity,MIMO_in_1_1_sensetivity)
+
+################################
+###robot turn off here
+
+##Set up turn off
+
+if timeFromStart > 20:
+    robotRunning = False
+
+##SISO 1.1
+if angle_total>SISO_in_1_1*1.01:
+    robotRunning = False
+##SISO 1.2
+if distance_travelled>SISO_in_1_2*1.01:
+    robotRunning = False 
+##SISO 1.3
+if (get_distance_to_coordinate(SISO_in_1_3_list)<SISO_in_1_3_sensetivity):
+    robotRunning = False 
+##SISO 1.4
+if (targetReachedFinal==True):
+    robotRunning = false
+##MIMO 2.1
+if timeFromStart > 60:
+    robotRunning = False
