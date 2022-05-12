@@ -228,16 +228,6 @@ def update_yposition():
     current_yCalc = current_y + change_y
     return current_yCalc
 
-def save_to_csv(listToSave, csvName):
-    """
-    Works: but watch out with csv file name when running the code multiple times
-    """
-    name = csvName + ".csv" #"Saved data angular"+ ".csv" # change name according to recording type
-    dict = {name: listToSave}
-    df = pd.DataFrame(dict)
-    df.to_csv(name)
-    np.savetxt(name, listToSave, delimiter =", ", fmt ='% s')
-
 ###P controllers
 def p_controller_speed_signal(set_LinVel):
     prop_error = set_LinVel - forward_velocity
@@ -303,7 +293,7 @@ def p_controller_theta_travelled_angle_velocity_signal(set_angle_total):
 ###P controllers - experimental
 def p_controller_speed_signalExp(set_LinVel):
     #initialise varaiables
-    global global_velocity_signal, vErrSum
+    global global_velocity_signal
 
     #Calculatre error
     prop_error = set_LinVel - forward_velocity
@@ -329,7 +319,6 @@ def p_controller_speed_signalExp(set_LinVel):
     return global_velocity_signal
 
 def p_controller_angle_signalExp(set_angle):
-    global aErrorList
     #calculate error
     prop_error = set_angle - theta
 
@@ -410,8 +399,7 @@ def reach_coordinates_constantVelocity(inputCoordList,constSpeed):
     return None
 
 def reach_coordinates_and_angle(inputCoordList, constVel, distanceBehindPoint, inputNumPoints):
-    global targetReachedFinalSISO,listOfSeqCoords, currentCoordTargetSISO, aErrorList, aTimeDifferences, sensetivityDist
-    sensetivityDist = 0.05
+    global targetReachedFinalSISO,listOfSeqCoords, currentCoordTargetSISO, aErrorList, aTimeDifferences
     if (globalLoopCounter == 1):
         #desired theta is inputCoordList[2]
         targetReachedFinalSISO = False
@@ -437,8 +425,8 @@ def reach_coordinates_and_angle(inputCoordList, constVel, distanceBehindPoint, i
 def reach_following_coordinates(inCoordinateList,inSpeedUsed,sensetivityUsed):
     #infinite loop of following
     ###calculator part
-    global  currentCoordTargetMIMO, infCoordList, sensetivityDist, aErrorList, aTimeDifferences #targetReachedMIMO
-    sensetivityDist = 0.05
+    global  currentCoordTargetMIMO, infCoordList, aErrorList, aTimeDifferences #targetReachedMIMO
+    
 
     if (globalLoopCounter == 1):
         infCoordList = inCoordinateList
@@ -468,7 +456,7 @@ def reach_following_coordinates(inCoordinateList,inSpeedUsed,sensetivityUsed):
         reach_correct_angle_0_forward_vel(targetting_angle)
     return None
 
-###Outputs
+###Graph plotting
 def ouput_plot(abscissaList, ordinateList):
     """    
     Works
@@ -485,6 +473,16 @@ def ouput_plot(abscissaList, ordinateList):
     plt.title("Wall proximity") #set the title of the graph
     plt.grid()
     plt.show() #display the graph
+
+def save_to_csv(listToSave, csvName):
+    """
+    Works: but watch out with csv file name when running the code multiple times
+    """
+    name = csvName + ".csv" #"Saved data angular"+ ".csv" # change name according to recording type
+    dict = {name: listToSave}
+    df = pd.DataFrame(dict)
+    df.to_csv(name)
+    np.savetxt(name, listToSave, delimiter =", ", fmt ='% s')
 
 ######################################
 ###Initialising variables
@@ -530,15 +528,14 @@ ordinateList2 = [] # for plotting graph
 ###Editable variables
 ##aka edit them to change behaviour
 
-
+sensetivityDist = 0.05
 
 #PID controlls
 #velocity controlls
 vKp = 0.75
 vKi = 2.85
 vKd = 0.126
-vErrSum = 0
-vLastErr = 0
+
 vErrorList = np.zeros(4)
 vTimeDifferences = np.zeros(4)
 
@@ -546,8 +543,7 @@ vTimeDifferences = np.zeros(4)
 aKp = 0.6 #0.35
 aKi = 2.85
 aKd = 0.126
-aErrSum = 0
-aLstErr = 0
+
 aErrorList = np.zeros(4)
 aTimeDifferences = np.zeros(4)
 
@@ -555,8 +551,6 @@ aTimeDifferences = np.zeros(4)
 dKp = 0.1
 dKi = 0
 dKd = 0.126
-dErrSum = 0
-dLastErr = 0
 
 #total theta travelled controls        
 aDKp = 0.3
