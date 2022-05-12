@@ -529,8 +529,6 @@ refTickRight = 0 #was None before
 #floats     
 current_x = 0
 current_y = 0
-change_x= 0
-change_y = 0
 theta = 0
 distance_travelled = 0
 angle_total = 0
