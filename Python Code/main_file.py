@@ -24,6 +24,16 @@ import json
 #p_controller_theta_travelled_angle_velocity_signal with higher speeds
 
 ###Getters
+def get_data_from_sensors():
+    returnedList =[]
+    timeatStart = time.time()
+    returnedList = get_data_to_list(returnedList)
+    dataList = returnedList[0]
+    outTimeCalc = returnedList[1] 
+    outTickLeft = dataList['left']
+    outTickRight = dataList['right']
+    return outTickLeft, outTickRight , outTimeCalc
+
 def get_data_to_list(listToSave):
     '''
     Calculates current angular velocity from 2 global tick values - from top of robot clockwise is negative, anticlockwise is possitive
@@ -36,7 +46,7 @@ def get_data_to_list(listToSave):
                     angular_velCalc (float) Current angular velocity of robot   
     '''    
 
-    global timeChange_2lastUpdates, timeTickUpdate_bool, DeadReckon_List_vel, DeadReckon_List_theta
+    global timeChange_2lastUpdates, timeTickUpdate_bool
 
     timeCurrent = time.time()   
     timeFromStart = timeCurrent - timeatStart 
@@ -227,6 +237,14 @@ def update_yposition():
     change_y = vAverageTick*np.sin(thetaAverageTick)*(timeChange_2lastUpdates) # error appearing when speed is not constant
     current_yCalc = current_y + change_y
     return current_yCalc
+
+def update_graph_data():
+    IMUList.append(tb.get_imu())
+    abscissaList.append(timeFromStart)
+    ordinateList.append(distance_to_wall)
+    nearestObject = get_nearest_object() # distance between the robot and nearest object detected. The scan is used
+    ordinateList2.append(nearestObject)
+    return None
 
 ###P controllers
 def p_controller_speed_signal(set_LinVel):
@@ -490,6 +508,7 @@ def save_to_csv(listToSave, csvName):
 
 #Turtlebot instance
 tb = Turtlebot() 
+
 #booleans
 robotRunning = True
 timeTickUpdate_bool = False
@@ -498,7 +517,12 @@ timeTickUpdate_bool = False
 timeFromStartArray = [0,0]
 DeadReckon_List_theta = [0,0]
 DeadReckon_List_vel = [0,0]
-returnedList = []
+
+#Graph plotting CORY
+IMUList = []
+abscissaList = [] # for plotting graph
+ordinateList = [] # for plotting graph
+ordinateList2 = [] # for plotting graph
 
 #integers
 globalLoopCounter = 1
@@ -518,12 +542,6 @@ angular_velocity = 0
 global_velocity_signal = 0
 
 
-#Graph plotting CORY
-IMUList = []
-abscissaList = [] # for plotting graph
-ordinateList = [] # for plotting graph
-ordinateList2 = [] # for plotting graph
-
 ###################################
 ###Editable variables
 ##aka edit them to change behaviour
@@ -535,7 +553,6 @@ sensetivityDist = 0.05
 vKp = 0.75
 vKi = 2.85
 vKd = 0.126
-
 vErrorList = np.zeros(4)
 vTimeDifferences = np.zeros(4)
 
@@ -543,7 +560,6 @@ vTimeDifferences = np.zeros(4)
 aKp = 0.6 #0.35
 aKi = 2.85
 aKd = 0.126
-
 aErrorList = np.zeros(4)
 aTimeDifferences = np.zeros(4)
 
@@ -586,23 +602,13 @@ MIMO_in_1_1_velocity = 0.05 #m/s
 ######################
 ### Main program
 
-# initialisation 
-timeatStart = time.time()
-returnedList = get_data_to_list(returnedList)
-dataList = returnedList[0]
-timeFromStart = returnedList[1] 
-refTickLeft = dataList['left']
-refTickRight = dataList['right']
+# get data start 
+refTickLeft, refTickRight , timeFromStart = get_data_from_sensors()
 
 ###loop
 while robotRunning:
     ###get data
-    returnedList = []
-    returnedList = get_data_to_list(returnedList)
-    dataList = returnedList[0]
-    timeFromStart = returnedList[1]
-    leftTickCurrent = dataList['left']
-    rightTickCurrent = dataList['right']
+    leftTickCurrent, rightTickCurrent, timeFromStart = get_data_from_sensors()
 
     #code only changes when tick happens
     if (timeTickUpdate_bool==True):
@@ -617,11 +623,7 @@ while robotRunning:
         current_y = update_yposition()
         
         ###Graph stuff
-        IMUList.append(tb.get_imu())
-        abscissaList.append(timeFromStart)
-        ordinateList.append(distance_to_wall)
-        nearestObject = get_nearest_object() # distance between the robot and nearest object detected. The scan is used
-        ordinateList2.append(nearestObject)
+        update_graph_data()
 
         #current function being completed
 
@@ -645,11 +647,10 @@ while robotRunning:
     #PASTE TURN OFFS HERE    
 
 
-
     globalLoopCounter += 1
 tb.stop()
         
-###outputs when out ofloop
+###outputs when out of loop
 saveThis = []
 saveThis.append(abscissaList)
 saveThis.append(ordinateList)      
