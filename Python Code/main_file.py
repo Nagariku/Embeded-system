@@ -12,7 +12,7 @@ from rolab_tb.turtlebot import Turtlebot
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import make_interp_spline
-import pands as pd
+import pandas as pd
 import json
 
 #coordinates are [x,y] or [x,y,theta]
@@ -419,9 +419,10 @@ def reach_coordinates_and_angle(inputCoordList, constVel, distanceBehindPoint, i
         #desired theta is inputCoordList[2]
         targetReachedFinalSISO = False
         distSplit = distanceBehindPoint/inputNumPoints
+        listOfSeqCoords=[]
         for i in range(0,inputNumPoints+1,1):
             distanceBehind_itterative = distanceBehindPoint - i*distSplit
-            listOfSeqCoord.append(get_coordinates_behind_point_angle(inputCoordList, distanceBehind_itterative,thetaTargetAngle))
+            listOfSeqCoord.append(get_coordinates_behind_point_angle(inputCoordList, distanceBehind_itterative))
     if (get_distance_to_coordinate(listOfSeqCoord[0])<sensetivityDist): #check if distance is close enough
         listOfSeqCoords.pop(0)
         if (len(listOfSeqCoords)>0): #check if there is next coordinator
@@ -527,6 +528,7 @@ timeTickUpdate_bool = False
 timeFromStartArray = [0,0]
 DeadReckon_List_theta = [0,0]
 DeadReckon_List_vel = [0,0]
+current_target=[0,0]
 
 #Graph plotting CORY
 IMUList = []
