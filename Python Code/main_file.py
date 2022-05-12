@@ -411,7 +411,7 @@ def reach_coordinates_constantVelocity(inputCoordList,constSpeed):
 def reach_coordinates_and_angle(inputCoordList, constVel, distanceBehindPoint, inputNumPoints):
     global targetReachedFinalSISO,listOfSeqCoords, currentCoordTargetSISO
     sensetivityDist = 0.05
-    if (globalLoopCounter == 0):
+    if (globalLoopCounter == 1):
         #desired theta is inputCoordList[2]
         targetReachedFinalSISO = False
         distSplit = distanceBehindPoint/inputNumPoints
@@ -439,7 +439,7 @@ def reach_following_coordinates(inCoordinateList,inSpeedUsed,sensetivityUsed):
     global  currentCoordTargetMIMO, infCoordList #targetReachedMIMO
     sensetivityDist = 0.05
 
-    if (globalLoopCounter == 0):
+    if (globalLoopCounter == 1):
         infCoordList = inCoordinateList
         currentCoordTargetMIMO = infCoordList[0]
         if (len(inCoordinateList)<2):
@@ -502,7 +502,7 @@ DeadReckon_List_vel = [0,0]
 returnedList = []
 
 #integers
-globalLoopCounter = 0
+globalLoopCounter = 1
 refTickLeft = 0 #was None before
 refTickRight = 0 #was None before
 
