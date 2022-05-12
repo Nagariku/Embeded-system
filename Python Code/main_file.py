@@ -499,6 +499,19 @@ def save_to_csv(listToSave, csvName):
     df.to_csv(name)
     np.savetxt(name, listToSave, delimiter =", ", fmt ='% s')
 
+def show_output_results():
+    saveThis = []
+    saveThis.append(abscissaList)
+    saveThis.append(ordinateList)      
+    saveThis.append(ordinateList2)   
+    csvName = "Data plot"    
+    save_to_csv(saveThis, csvName)
+
+    # Plotting the data
+    ouput_plot(abscissaList, ordinateList)
+    ouput_plot(abscissaList, ordinateList2)
+    return None
+
 ######################################
 ###Initialising variables
 ##aka don't touch these or program won't work
@@ -548,15 +561,15 @@ sensetivityDist = 0.05
 vKp = 0.75
 vKi = 2.85
 vKd = 0.126
-vErrorList = np.zeros(4)
-vTimeDifferences = np.zeros(4)
+vErrorList = np.zeros(4) #each zero = 0.045sec
+vTimeDifferences = np.zeros(4) #each zero = 0.045sec
 
 #angular controls
 aKp = 0.6 #0.35
 aKi = 2.85
 aKd = 0.126
-aErrorList = np.zeros(4)
-aTimeDifferences = np.zeros(4)
+aErrorList = np.zeros(4) #each zero = 0.045sec
+aTimeDifferences = np.zeros(4) #each zero = 0.045sec
 
 #distance travelled controls
 dKp = 0.1
@@ -645,16 +658,5 @@ while robotRunning:
     globalLoopCounter += 1
 tb.stop()
         
-###outputs when out of loop
-saveThis = []
-saveThis.append(abscissaList)
-saveThis.append(ordinateList)      
-saveThis.append(ordinateList2)   
-csvName = "Data plot"    
-save_to_csv(saveThis, csvName)
-
-# Plotting the data
-ouput_plot(abscissaList, ordinateList)
-ouput_plot(abscissaList, ordinateList2)
-
-    
+###outputs when out of loop, can be commented out
+show_output_results()
