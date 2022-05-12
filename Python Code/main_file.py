@@ -6,7 +6,7 @@ Created on Tue May  3 14:28:13 2022
 """
 
 ####Imports
-from distutils.log import error
+# from distutils.log import error
 import time
 from rolab_tb.turtlebot import Turtlebot
 import numpy as np
@@ -107,7 +107,7 @@ def get_deadreckon_v_and_angle_averages():
 def get_distance_to_coordinate(listCoordsInput):
     delta_X=current_x - listCoordsInput[0]
     delta_Y= current_y - listCoordsInput[1]
-    totalDistanceToCoord = np.sqrt(deltaY**2+deltaX**2)
+    totalDistanceToCoord = np.sqrt(delta_Y**2+delta_X**2)
     return totalDistanceToCoord
 
 def get_distance_to_wall():
@@ -228,9 +228,9 @@ def update_yposition():
     current_yCalc = current_y + change_y
     return current_yCalc
 
-def update_yposition_data_to_csv(listToSave, csvName):
+def save_to_csv(listToSave, csvName):
     """
-    Works: but watch out with csv file name when rrunning the cod emultiple times
+    Works: but watch out with csv file name when running the code multiple times
     """
     name = csvName + ".csv" #"Saved data angular"+ ".csv" # change name according to recording type
     dict = {name: listToSave}
@@ -303,7 +303,7 @@ def p_controller_theta_travelled_angle_velocity_signal(set_angle_total):
 ###P controllers - experimental
 def p_controller_speed_signalExp(set_LinVel):
     #initialise varaiables
-    global global_velocity_signal
+    global global_velocity_signal, vErrSum
 
     #Calculatre error
     prop_error = set_LinVel - forward_velocity
@@ -329,6 +329,7 @@ def p_controller_speed_signalExp(set_LinVel):
     return global_velocity_signal
 
 def p_controller_angle_signalExp(set_angle):
+    global aErrorList
     #calculate error
     prop_error = set_angle - theta
 
@@ -399,7 +400,7 @@ def reach_theta_travelled_0_forward_vel(total_theta_wanted):
 
 def reach_distance_0_angular_vel(inputDistance):
     tb.set_control_inputs(0.1, p_controller_distance_travelled_forward_velocity_signal(inputDistance)) # set control input {lin-vel: 0.1, ang-vel:0}
-    tb.set_control_inputs(0.1, p_controller_distance_travelled_forward_velocity_signalExp(set_distance)(inputDistance)) # set control input {lin-vel: 0.1, ang-vel:0}  
+    # tb.set_control_inputs(0.1, p_controller_distance_travelled_forward_velocity_signalExp(set_distance)(inputDistance)) # set control input {lin-vel: 0.1, ang-vel:0}  
     return None
 
 def reach_coordinates_constantVelocity(inputCoordList,constSpeed):
@@ -409,7 +410,7 @@ def reach_coordinates_constantVelocity(inputCoordList,constSpeed):
     return None
 
 def reach_coordinates_and_angle(inputCoordList, constVel, distanceBehindPoint, inputNumPoints):
-    global targetReachedFinalSISO,listOfSeqCoords, currentCoordTargetSISO
+    global targetReachedFinalSISO,listOfSeqCoords, currentCoordTargetSISO, aErrorList, aTimeDifferences, sensetivityDist
     sensetivityDist = 0.05
     if (globalLoopCounter == 1):
         #desired theta is inputCoordList[2]
@@ -436,7 +437,7 @@ def reach_coordinates_and_angle(inputCoordList, constVel, distanceBehindPoint, i
 def reach_following_coordinates(inCoordinateList,inSpeedUsed,sensetivityUsed):
     #infinite loop of following
     ###calculator part
-    global  currentCoordTargetMIMO, infCoordList #targetReachedMIMO
+    global  currentCoordTargetMIMO, infCoordList, sensetivityDist, aErrorList, aTimeDifferences #targetReachedMIMO
     sensetivityDist = 0.05
 
     if (globalLoopCounter == 1):
@@ -445,6 +446,7 @@ def reach_following_coordinates(inCoordinateList,inSpeedUsed,sensetivityUsed):
         if (len(inCoordinateList)<2):
             print ("Insufficient coordinates")
         return None
+    
     if (get_distance_to_coordinate(infCoordList[0])<sensetivityUsed):
         infCoordList.append(currentCoordTargetMIMO)
         infCoordList.pop(0)
@@ -464,7 +466,6 @@ def reach_following_coordinates(inCoordinateList,inSpeedUsed,sensetivityUsed):
     else:
         #caseNum = 3 turn in 1 place
         reach_correct_angle_0_forward_vel(targetting_angle)
-
     return None
 
 ###Outputs
@@ -512,8 +513,8 @@ current_y = 0
 change_x= 0
 change_y = 0
 theta = 0
-distance_travelled =0
-angle_total =0
+distance_travelled = 0
+angle_total = 0
 forward_velocity = 0
 angular_velocity = 0
 global_velocity_signal = 0
@@ -609,13 +610,6 @@ while robotRunning:
     leftTickCurrent = dataList['left']
     rightTickCurrent = dataList['right']
 
-    ###Graph stuff
-    IMUList.append(tb.get_imu())
-    abscissaList.append(timeFromStart)
-    ordinateList.append(distance_to_wall)
-    nearestObject = get_nearest_object() # distance between the robot and nearest object detected. The scan is used
-    ordinateList2.append(nearestObject)
-
     #code only changes when tick happens
     if (timeTickUpdate_bool==True):
         #get updates
@@ -627,6 +621,13 @@ while robotRunning:
         distance_to_wall= get_distance_to_wall()
         current_x = update_xposition()
         current_y = update_yposition()
+        
+        ###Graph stuff
+        IMUList.append(tb.get_imu())
+        abscissaList.append(timeFromStart)
+        ordinateList.append(distance_to_wall)
+        nearestObject = get_nearest_object() # distance between the robot and nearest object detected. The scan is used
+        ordinateList2.append(nearestObject)
 
         #current function being completed
 
@@ -638,7 +639,7 @@ while robotRunning:
         print("Angle: ", str(round(theta/2/np.pi*360, 5)))
         print("x position: ", str(round(current_x,5)))
         print("y position: ", str(round(current_y,5)))
-        print("current target: ", current_target)
+        print("current target: ", current_target) # infCoordList
         print("distance to target", get_distance_to_coordinate(current_target))
         print("total distance travelled", str(round(distance_travelled,5)))
         print("total angular displacement", str(round(angle_total,5)))
@@ -660,10 +661,10 @@ saveThis.append(abscissaList)
 saveThis.append(ordinateList)      
 saveThis.append(ordinateList2)   
 csvName = "Data plot"    
-data_to_csv(saveThis, csvName)
+save_to_csv(saveThis, csvName)
 
 # Plotting the data
-plot_this(abscissaList, ordinateList)
-plot_this(abscissaList, ordinateList2)
+ouput_plot(abscissaList, ordinateList)
+ouput_plot(abscissaList, ordinateList2)
 
     
