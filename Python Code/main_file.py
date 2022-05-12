@@ -438,7 +438,7 @@ def reach_coordinates_and_angle(inputCoordList, constVel, distanceBehindPoint, i
             currentCoordTargetSISO = listOfSeqCoords[0]
 
         reach_coordinates_constantVelocity(listOfSeqCoords[0], constVel)
-    return None
+    return currentCoordTargetSISO
 
 def reach_following_coordinates(inCoordinateList,inSpeedUsed,sensetivityUsed):
     #infinite loop of following
@@ -465,14 +465,14 @@ def reach_following_coordinates(inCoordinateList,inSpeedUsed,sensetivityUsed):
     ###Actuator part
     if ((targetting_angle<(np.pi/3)) or (targetting_angle>5/3)):
         #caseNum = 1 normal movement
-        reach_coordinates_constantVelocity(current_target, inSpeedUsed)
+        reach_coordinates_constantVelocity(currentCoordTargetMIMO, inSpeedUsed)
     elif ((targetting_angle<(2*np.pi/3)) or (targetting_angle>4/3)):
         #caseNum = 2 fast turn + slow down 
-        reach_coordinates_constantVelocity(current_target, inSpeedUsed/2)
+        reach_coordinates_constantVelocity(currentCoordTargetMIMO, inSpeedUsed/2)
     else:
         #caseNum = 3 turn in 1 place
         reach_correct_angle_0_forward_vel(targetting_angle)
-    return None
+    return currentCoordTargetMIMO
 
 ###Graph plotting
 def ouput_plot(abscissaList, ordinateList):
@@ -586,7 +586,6 @@ SISO_in_1_2 = 2 # 2 meters
 #SISO 1.3
 SISO_in_1_3_list = [1,1]
 SISO_in_1_3_velocity = 0.05
-SISO_in_1_3_sensetivity = 0.03 
 
 #SISO 1.4
 SISO_in_1_4_list = [-1,-1, 3/2*np.pi]
@@ -628,6 +627,7 @@ while robotRunning:
         #current function being completed
 
         #PASTE HERE
+    
 
     if globalLoopCounter % 500 == 0:
         print("\nLinear velocity: ", str(round(forward_velocity, 5)))
