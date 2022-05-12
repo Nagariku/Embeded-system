@@ -86,21 +86,20 @@ def get_tick_value_in_rad(inputEncoderTick):
     return tickInRad
 
 def get_current_theta():
-    global DeadReckon_List_theta, theta
     right_tick_relative = rightTickCurrent - refTickRight
     left_tick_relative = leftTickCurrent - refTickLeft
     differenceInTicks = right_tick_relative - left_tick_relative
     if differenceInTicks > 0:
         remaindery = differenceInTicks % 19859
-        theta = remaindery*0.0181274
-        theta = theta/360*2*np.pi #degrees to radians
+        thetaCalc = remaindery*0.0181274
+        thetaCalc = thetaCalc/360*2*np.pi #degrees to radians
     elif differenceInTicks < 0:
         remaindery = (-differenceInTicks) % (-19859)
-        theta = remaindery*(-0.0181274) 
-        theta = theta/360*2*np.pi #degrees to radians
+        thetaCalc = remaindery*(-0.0181274) 
+        thetaCalc = thetaCalc/360*2*np.pi #degrees to radians
     else:
-        theta = 0
-    return theta
+        thetaCalc = 0
+    return thetaCalc
 
 def get_deadreckon_v_and_angle_averages():
     #correction to prevent negative angle fuckery
@@ -225,18 +224,16 @@ def update_theta_travelled():
     return angle_totalCalc
 
 def update_xposition():
-    global change_x
     vAverageTick, thetaAverageTick = get_deadreckon_v_and_angle_averages()
-    change_x = vAverageTick*np.cos(thetaAverageTick)*(timeChange_2lastUpdates) # error appearing when speed is not constant
-    current_xCalc = current_x + change_x
-    return current_xCalc
+    outChange_x = vAverageTick*np.cos(thetaAverageTick)*(timeChange_2lastUpdates) # error appearing when speed is not constant
+    current_xCalc = current_x + outChange_x
+    return current_xCalc, outChange_x
 
 def update_yposition():
-    global change_y
     vAverageTick, thetaAverageTick = get_deadreckon_v_and_angle_averages()
-    change_y = vAverageTick*np.sin(thetaAverageTick)*(timeChange_2lastUpdates) # error appearing when speed is not constant
-    current_yCalc = current_y + change_y
-    return current_yCalc
+    outChange_y = vAverageTick*np.sin(thetaAverageTick)*(timeChange_2lastUpdates) # error appearing when speed is not constant
+    current_yCalc = current_y + outChange_y
+    return current_yCalc, outChange_y
 
 def update_graph_data():
     IMUList.append(tb.get_imu())
@@ -418,26 +415,26 @@ def reach_coordinates_constantVelocity(inputCoordList,constSpeed):
 
 def reach_coordinates_and_angle(inputCoordList, constVel, distanceBehindPoint, inputNumPoints):
     global targetReachedFinalSISO,listOfSeqCoords, currentCoordTargetSISO, aErrorList, aTimeDifferences
-    if (globalLoopCounter == 1):
+    if (globalLoopCounter == 1): #setting up for future
         #desired theta is inputCoordList[2]
         targetReachedFinalSISO = False
         distSplit = distanceBehindPoint/inputNumPoints
         for i in range(0,inputNumPoints+1,1):
             distanceBehind_itterative = distanceBehindPoint - i*distSplit
             listOfSeqCoord.append(get_coordinates_behind_point_angle(inputCoordList, distanceBehind_itterative,thetaTargetAngle))
-        if (get_distance_to_coordinate(listOfSeqCoord[0])<sensetivityDist):
-            listOfSeqCoords.pop(0)
-            if (len(listOfSeqCoords)>0):
-                currentCoordTargetSISO = listOfSeqCoords[0]
-                aErrorList = np.zeros(4)
-                aTimeDifferences = np.zeros(4)
-            else:
-                targetReachedFinalSISO = True
-                return None
-        else:
+    if (get_distance_to_coordinate(listOfSeqCoord[0])<sensetivityDist): #check if distance is close enough
+        listOfSeqCoords.pop(0)
+        if (len(listOfSeqCoords)>0): #check if there is next coordinator
+            currentCoordTargetSISO = listOfSeqCoords[0]
+            aErrorList = np.zeros(4)
+            aTimeDifferences = np.zeros(4)
+        else: #if not, target is reached
+            targetReachedFinalSISO = True
+            return None
+    else:
             currentCoordTargetSISO = listOfSeqCoords[0]
 
-        reach_coordinates_constantVelocity(listOfSeqCoords[0], constVel)
+    reach_coordinates_constantVelocity(listOfSeqCoords[0], constVel)
     return currentCoordTargetSISO
 
 def reach_following_coordinates(inCoordinateList,inSpeedUsed,sensetivityUsed):
@@ -618,8 +615,8 @@ while robotRunning:
         angle_total = update_theta_travelled()
         theta = get_current_theta()
         distance_to_wall= get_distance_to_wall()
-        current_x = update_xposition()
-        current_y = update_yposition()
+        current_x, change_x = update_xposition()
+        current_y, change_y = update_yposition()
         
         ###Graph stuff
         update_graph_data()
