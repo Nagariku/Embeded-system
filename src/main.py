@@ -16,12 +16,20 @@ import json
 
 #files
 from methods import actuators, getters, graph_plotting, p_controllers, pid_controllers, updaters
-from data import glob_variables, init_variables, pid_variables
+from data import constants
 
 #coordinates are [x,y] or [x,y,theta]
 #x and y are in meters
 #theta in radians from 0 to 2pi in anticlockwise direction, if overflowed it resets to 0
 #tb.set_control_inputs(0.1, 0.1) # set control input {lin-vel: 0.1, ang-vel:0}  aka base of controls
+
+tb = Turtlebot()
+robotRunning = True
+timeTickUpdate_bool = False
+timeFromStartArray = DeadReckon_List_theta = DeadReckon_List_vel = current_target = [0,0] 
+IMUList = abscissaList = ordinateList = ordinateList2 = []
+globalLoopCounter = 1
+current_x = current_y =  distance_travelled= angle_total =  global_velocity_signal= 0
 
 # get data start 
 refTickLeft, refTickRight , timeFromStart = getters.get_data_from_sensors()

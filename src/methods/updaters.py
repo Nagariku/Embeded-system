@@ -1,6 +1,5 @@
 from methods import getters
-from data.pid_variables import *
-from data.init_variables import *
+import methods.data.constants
 
 def update_current_linear_velocity():
     '''

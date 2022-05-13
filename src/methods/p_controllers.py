@@ -1,9 +1,9 @@
-from data.pid_variables import *
-from data.init_variables import *
+
+import methods.data.constants
 def p_controller_speed_signal(set_LinVel):
-    global forward_velocity
-    prop_error = set_LinVel - forward_velocity
-    out_signal = vKp * prop_error 
+    import testfile
+    prop_error = set_LinVel - testfile.forward_velocity
+    out_signal = methods.data.constants.vKp * prop_error 
     final_signal = set_LinVel+out_signal
     if (final_signal >0.22):
         final_signal  = 0.215

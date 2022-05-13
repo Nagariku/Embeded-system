@@ -2,30 +2,30 @@ from methods import p_controllers
 from methods import pid_controllers
 from methods import getters
 
-def reach_forward_speed(inputForwVel,inputForwardVel):
-    print (p_controllers.p_controller_speed_signal(inputForwVel,inputForwardVel))
-    tb.set_control_inputs(p_controllers.p_controller_speed_signal(inputForwVel,inputForwardVel), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
-    #tb.set_control_inputs(pid_controllers.p_controller_speed_signalExp(inputForwVel,inputForwardVel), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
+def reach_forward_speed(inputForwVel):
+    print (p_controllers.p_controller_speed_signal(inputForwVel))
+    #tb.set_control_inputs(p_controllers.p_controller_speed_signal(inputForwVel), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
+    #tb.set_control_inputs(pid_controllers.p_controller_speed_signalExp(inputForwVel), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
     return None
 
-def reach_correct_angle_0_forward_vel(set_angle,inputTheta):
-    tb.set_control_inputs(0, p_controllers.p_controller_angle_signal(set_angle,inputTheta)) # set control input {lin-vel: 0, ang-vel: out_signal}
-    #tb.set_control_inputs(0, p_controllers.pid_controller_angle_signalExp(set_angle,inputTheta)) # set control input {lin-vel: 0, ang-vel: out_signal}
+def reach_correct_angle_0_forward_vel(set_angle):
+    tb.set_control_inputs(0, p_controllers.p_controller_angle_signal(set_angle)) # set control input {lin-vel: 0, ang-vel: out_signal}
+    #tb.set_control_inputs(0, p_controllers.pid_controller_angle_signalExp(set_angle)) # set control input {lin-vel: 0, ang-vel: out_signal}
     return None
 
-def reach_theta_travelled_0_forward_vel(total_theta_wanted,inputTotalTheta):
-    tb.set_control_inputs(p_controllers.p_controller_theta_travelled_angle_velocity_signal(total_theta_wanted,inputTotalTheta), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
-    #tb.set_control_inputs(pid_controllers.p_controller_theta_travelled_angle_velocity_signalExp(total_theta_wanted,inputTotalTheta), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
+def reach_theta_travelled_0_forward_vel(total_theta_wanted):
+    tb.set_control_inputs(p_controllers.p_controller_theta_travelled_angle_velocity_signal(total_theta_wanted), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
+    #tb.set_control_inputs(pid_controllers.p_controller_theta_travelled_angle_velocity_signalExp(total_theta_wanted), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
     return None
 
-def reach_distance_0_angular_vel(inputDistance,inputCurrentDistance):
-    tb.set_control_inputs(0.1, p_controllers.p_controller_distance_travelled_forward_velocity_signal(inputDistance,inputCurrentDistance)) # set control input {lin-vel: 0.1, ang-vel:0}
+def reach_distance_0_angular_vel(inputDistance):
+    tb.set_control_inputs(0.1, p_controllers.p_controller_distance_travelled_forward_velocity_signal(inputDistance)) # set control input {lin-vel: 0.1, ang-vel:0}
     return None
 
 def reach_coordinates_constantVelocity(inputCoordList,constSpeed):
     desired_angle_func = getters.get_perfect_angle_to_next_coord_from_current_position(inputCoordList)
-    theta_output = p_controllers.p_controller_angle_signal(desired_angle_func,inputTheta)
-    tb.set_control_inputs(constSpeed, theta_output) # set control input {lin-vel: 0, ang-vel: out_signal}
+    theta_output = p_controllers.p_controller_angle_signal(desired_angle_func)
+    tb.set_control_inputs(constSpeed) # set control input {lin-vel: 0, ang-vel: out_signal}
     return None
 
 def reach_coordinates_and_angle(inputCoordList, constVel, distanceBehindPoint, inputNumPoints):
