@@ -2,7 +2,7 @@
 ##aka don't touch these or program won't work
 
 #Turtlebot instance
-tb = Turtlebot() 
+#tb = Turtlebot() 
 
 #booleans
 robotRunning = True

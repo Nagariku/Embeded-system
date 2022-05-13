@@ -1,4 +1,7 @@
+from data.pid_variables import *
+from data.init_variables import *
 def p_controller_speed_signal(set_LinVel):
+    global forward_velocity
     prop_error = set_LinVel - forward_velocity
     out_signal = vKp * prop_error 
     final_signal = set_LinVel+out_signal

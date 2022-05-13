@@ -7,6 +7,10 @@ import time
 import json
 
 from methods import actuators, getters, graph_plotting, p_controllers, pid_controllers, updaters
-from data import pid_variables #glob_variables, #init_variables, 
+import data.pid_variables
+import data.init_variables
 
+actuators.reach_forward_speed(5)
+data.init_variables.forward_velocity = 4 
+import data.init_variables
 actuators.reach_forward_speed(5)

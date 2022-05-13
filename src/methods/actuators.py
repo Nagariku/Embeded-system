@@ -1,27 +1,30 @@
-def reach_forward_speed(inputForwVel):
-    print (p_controller_speed_signal(inputForwVel))
-    #tb.set_control_inputs(p_controller_speed_signal(inputForwVel), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
-    #tb.set_control_inputs(p_controller_speed_signalExp(inputForwVel), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
+from methods import p_controllers
+from methods import pid_controllers
+from methods import getters
+
+def reach_forward_speed(inputForwVel,inputForwardVel):
+    print (p_controllers.p_controller_speed_signal(inputForwVel,inputForwardVel))
+    tb.set_control_inputs(p_controllers.p_controller_speed_signal(inputForwVel,inputForwardVel), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
+    #tb.set_control_inputs(pid_controllers.p_controller_speed_signalExp(inputForwVel,inputForwardVel), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
     return None
 
-def reach_correct_angle_0_forward_vel(set_angle):
-    tb.set_control_inputs(0, p_controller_angle_signal(set_angle)) # set control input {lin-vel: 0, ang-vel: out_signal}
-    tb.set_control_inputs(0, p_controller_angle_signalExp(set_angle)) # set control input {lin-vel: 0, ang-vel: out_signal}
+def reach_correct_angle_0_forward_vel(set_angle,inputTheta):
+    tb.set_control_inputs(0, p_controllers.p_controller_angle_signal(set_angle,inputTheta)) # set control input {lin-vel: 0, ang-vel: out_signal}
+    #tb.set_control_inputs(0, p_controllers.pid_controller_angle_signalExp(set_angle,inputTheta)) # set control input {lin-vel: 0, ang-vel: out_signal}
     return None
 
-def reach_theta_travelled_0_forward_vel(total_theta_wanted):
-    tb.set_control_inputs(p_controller_theta_travelled_angle_velocity_signal(total_theta_wanted), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
-    #tb.set_control_inputs(p_controller_theta_travelled_angle_velocity_signalExp(total_theta_wanted), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
+def reach_theta_travelled_0_forward_vel(total_theta_wanted,inputTotalTheta):
+    tb.set_control_inputs(p_controllers.p_controller_theta_travelled_angle_velocity_signal(total_theta_wanted,inputTotalTheta), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
+    #tb.set_control_inputs(pid_controllers.p_controller_theta_travelled_angle_velocity_signalExp(total_theta_wanted,inputTotalTheta), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
     return None
 
-def reach_distance_0_angular_vel(inputDistance):
-    tb.set_control_inputs(0.1, p_controller_distance_travelled_forward_velocity_signal(inputDistance)) # set control input {lin-vel: 0.1, ang-vel:0}
-    # tb.set_control_inputs(0.1, p_controller_distance_travelled_forward_velocity_signalExp(set_distance)(inputDistance)) # set control input {lin-vel: 0.1, ang-vel:0}  
+def reach_distance_0_angular_vel(inputDistance,inputCurrentDistance):
+    tb.set_control_inputs(0.1, p_controllers.p_controller_distance_travelled_forward_velocity_signal(inputDistance,inputCurrentDistance)) # set control input {lin-vel: 0.1, ang-vel:0}
     return None
 
 def reach_coordinates_constantVelocity(inputCoordList,constSpeed):
-    desired_angle_func = get_perfect_angle_to_next_coord_from_current_position(inputCoordList)
-    theta_output = p_controller_angle_signal(desired_angle_func)
+    desired_angle_func = getters.get_perfect_angle_to_next_coord_from_current_position(inputCoordList)
+    theta_output = p_controllers.p_controller_angle_signal(desired_angle_func,inputTheta)
     tb.set_control_inputs(constSpeed, theta_output) # set control input {lin-vel: 0, ang-vel: out_signal}
     return None
 
@@ -34,8 +37,8 @@ def reach_coordinates_and_angle(inputCoordList, constVel, distanceBehindPoint, i
         listOfSeqCoords=[]
         for i in range(0,inputNumPoints+1,1):
             distanceBehind_itterative = distanceBehindPoint - i*distSplit
-            listOfSeqCoord.append(get_coordinates_behind_point_angle(inputCoordList, distanceBehind_itterative))
-    if (get_distance_to_coordinate(listOfSeqCoord[0])<sensetivityDist): #check if distance is close enough
+            listOfSeqCoord.append(getters.get_coordinates_behind_point_angle(inputCoordList, distanceBehind_itterative))
+    if (getrters.get_distance_to_coordinate(listOfSeqCoord[0])<sensetivityDist): #check if distance is close enough
         listOfSeqCoords.pop(0)
         if (len(listOfSeqCoords)>0): #check if there is next coordinator
             currentCoordTargetSISO = listOfSeqCoords[0]
@@ -63,14 +66,14 @@ def reach_following_coordinates(inCoordinateList,inSpeedUsed,sensetivityUsed):
             print ("Insufficient coordinates")
         return None
     
-    if (get_distance_to_coordinate(infCoordList[0])<sensetivityUsed):
+    if (getters.get_distance_to_coordinate(infCoordList[0])<sensetivityUsed):
         infCoordList.append(currentCoordTargetMIMO)
         infCoordList.pop(0)
         aErrorList = np.zeros(4)
         aTimeDifferences = np.zeros(4)
 
     currentCoordTargetMIMO = infCoordList[0]
-    targetting_angle = get_perfect_angle_to_next_coord_from_current_position(currentCoordTargetMIMO)
+    targetting_angle = getters.get_perfect_angle_to_next_coord_from_current_position(currentCoordTargetMIMO)
 
     ###Actuator part
     if ((targetting_angle<(np.pi/3)) or (targetting_angle>5/3)):
