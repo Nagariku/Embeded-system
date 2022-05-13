@@ -1,5 +1,6 @@
 def reach_forward_speed(inputForwVel):
-    tb.set_control_inputs(p_controller_speed_signal(inputForwVel), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
+    print (p_controller_speed_signal(inputForwVel))
+    #tb.set_control_inputs(p_controller_speed_signal(inputForwVel), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
     #tb.set_control_inputs(p_controller_speed_signalExp(inputForwVel), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
     return None
 

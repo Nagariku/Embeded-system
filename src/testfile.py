@@ -6,15 +6,7 @@ import time
 #import pandas as pd
 import json
 
-#files
-#from methods import actuators, controllers, getters, graph_plotting, p_controllers,pid_controllers, updaters
-from init_variables import *
-#from glob_variables import *
-#from init_variables import *
+from methods import actuators, getters, graph_plotting, p_controllers, pid_controllers, updaters
+from data import pid_variables #glob_variables, #init_variables, 
 
-
-print (DeadReckon_List_theta)
-print (DeadReckon_List_vel)
-#print (getters.get_tick_value_in_rad(5000))
-print (current_x)
-print (current_y)
+actuators.reach_forward_speed(5)

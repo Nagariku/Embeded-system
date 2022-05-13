@@ -15,8 +15,8 @@ import pandas as pd
 import json
 
 #files
-from methods import actuators, controllers, getters, graph_plotting, p_controllers, pid_controllers, updaters
-
+from methods import actuators, getters, graph_plotting, p_controllers, pid_controllers, updaters
+from data import glob_variables, init_variables, pid_variables
 
 #coordinates are [x,y] or [x,y,theta]
 #x and y are in meters
@@ -24,27 +24,27 @@ from methods import actuators, controllers, getters, graph_plotting, p_controlle
 #tb.set_control_inputs(0.1, 0.1) # set control input {lin-vel: 0.1, ang-vel:0}  aka base of controls
 
 # get data start 
-refTickLeft, refTickRight , timeFromStart = get_data_from_sensors()
+refTickLeft, refTickRight , timeFromStart = getters.get_data_from_sensors()
 
 ###loop
 while robotRunning:
     ###get data
-    leftTickCurrent, rightTickCurrent, timeFromStart = get_data_from_sensors()
+    leftTickCurrent, rightTickCurrent, timeFromStart = getters.get_data_from_sensors()
 
     #code only changes when tick happens
     if (timeTickUpdate_bool==True):
         #get updates
-        forward_velocity = update_current_linear_velocity() 
-        angular_velocity = update_current_angular_velocity() #* 57.29 # from radians to degrees
-        distance_travelled = update_distance_travelled()
-        angle_total = update_theta_travelled()
-        theta = get_current_theta()
-        distance_to_wall= get_distance_to_wall()
-        current_x, change_x = update_xposition()
-        current_y, change_y = update_yposition()
+        forward_velocity = updaters.update_current_linear_velocity()
+        angular_velocity = updaters.update_current_angular_velocity() #* 57.29 # from radians to degrees
+        distance_travelled = updaters.update_distance_travelled()
+        angle_total = updaters.update_theta_travelled()
+        theta = getters.get_current_theta()
+        distance_to_wall= getters.get_distance_to_wall()
+        current_x, change_x = updaters.update_xposition()
+        current_y, change_y = updaters.update_yposition()
         
         ###Graph stuff
-        update_graph_data()
+        updaters.update_graph_data()
 
         #current function being completed
         ##SISO 1.1
@@ -68,7 +68,7 @@ while robotRunning:
         print("x position: ", str(round(current_x,5)))
         print("y position: ", str(round(current_y,5)))
         print("current target: ", current_target) # infCoordList
-        print("distance to target", get_distance_to_coordinate(current_target))
+        print("distance to target", getters.get_distance_to_coordinate(current_target))
         print("total distance travelled", str(round(distance_travelled,5)))
         print("total angular displacement", str(round(angle_total,5)))
          
@@ -83,4 +83,4 @@ while robotRunning:
 tb.stop()
         
 ###outputs when out of loop, can be commented out
-show_output_results()
+graph_plotting.show_output_results()
