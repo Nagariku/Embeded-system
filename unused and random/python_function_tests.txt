@@ -10,20 +10,6 @@ Created on Wed May 11 2022
 
 ##Set up tests
 #1
-reach_correct_angle_0_forward_vel(testAngle)
-#2
-reach_forward_speed(testSpeed)
-
-##SISO 1.1
-reach_theta_travelled_0_forward_vel(SISO_in_1_1)
-##SISO 1.2
-reach_distance_0_angular_vel(SISO_in_1_2)
-##SISO 1.3
-reach_coordinates_constantVelocity(SISO_in_1_3_list,SISO_in_1_3_velocity)
-##SISO 1.4
-current_target= reach_following_coordinates(SISO_in_1_4_list,SISO_in_1_4_velocity, SISO_in_1_4_distance, SISO_in_1_4_numPoints)
-##MIMO 2.1
-current_target= reach_following_coordinates(MIMO_in_1_1_list,MIMO_in_1_1_velocity,MIMO_in_1_1_sensetivity)
 
 ################################
 ###robot turn off here
