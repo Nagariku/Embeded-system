@@ -1,5 +1,5 @@
 from methods import getters
-import methods.data.constants
+from methods.data import constants
 
 def update_current_linear_velocity():
     '''

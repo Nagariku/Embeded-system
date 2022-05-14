@@ -15,7 +15,6 @@ def reach_correct_angle_0_forward_vel(set_angle):
 
 def reach_theta_travelled_0_forward_vel(total_theta_wanted):
     tb.set_control_inputs(p_controllers.p_controller_theta_travelled_angle_velocity_signal(total_theta_wanted), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
-    #tb.set_control_inputs(pid_controllers.p_controller_theta_travelled_angle_velocity_signalExp(total_theta_wanted), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
     return None
 
 def reach_distance_0_angular_vel(inputDistance):

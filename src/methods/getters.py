@@ -1,14 +1,18 @@
-def get_data_from_sensors():
+from  methods.data import init_variables
+import time
+from methods import getters
+
+def get_data_from_sensors(timeAtStart):
     returnedList =[]
     timeatStart = time.time()
-    returnedList = get_data_to_list(returnedList)
+    returnedList = get_data_to_list(returnedList,timeAtStart)
     dataList = returnedList[0]
     outTimeCalc = returnedList[1] 
     outTickLeft = dataList['left']
     outTickRight = dataList['right']
     return outTickLeft, outTickRight , outTimeCalc
 
-def get_data_to_list(listToSave):
+def get_data_to_list(listToSave,timeAtStart):
     '''
     Calculates current angular velocity from 2 global tick values - from top of robot clockwise is negative, anticlockwise is possitive
 
@@ -20,26 +24,26 @@ def get_data_to_list(listToSave):
                     angular_velCalc (float) Current angular velocity of robot   
     '''    
 
-    global timeChange_2lastUpdates, timeTickUpdate_bool
-
-    timeCurrent = time.time()   
-    timeFromStart = timeCurrent - timeatStart 
+    global timeChange_2lastUpdates
   
-    timeFromStartArray.append(timeFromStart)
-    timeFromStartArray.pop(0)
-    timeChange_2lastUpdates = timeFromStartArray[1]-timeFromStartArray[0]
+    timeCurrent = time.time()   
+    timeFromStartFunc = timeCurrent - timeAtStart 
+  
+    init_variables.timeFromStartArray.append(timeFromStartFunc)
+    init_variables.timeFromStartArray.pop(0)
+    timeChange_2lastUpdates = init_variables.timeFromStartArray[1]-init_variables.timeFromStartArray[0]
 
     if (timeChange_2lastUpdates!=0):
-        timeTickUpdate_bool = True
-        DeadReckon_List_vel.append(forward_velocity)
-        DeadReckon_List_theta.append(get_current_theta())
-        DeadReckon_List_vel.pop(0)
-        DeadReckon_List_theta.pop(0)
+        init_variables.TimeTickUpdate_bool = True
+        init_variables.DeadReckon_List_vel.append(init_variables.forward_velocity)
+        init_variables.DeadReckon_List_theta.append(getters.get_current_theta())
+        init_variables.DeadReckon_List_vel.pop(0)
+        init_variables.DeadReckon_List_theta.pop(0)
     else:    
-        timeTickUpdate_bool = False
+        init_variables.timeTickUpdate_bool = False
 
     listToSave.append(tb.get_encoder_ticks())
-    listToSave.append(timeFromStart)
+    listToSave.append(timeFromStartFunc)
     
     return listToSave
 

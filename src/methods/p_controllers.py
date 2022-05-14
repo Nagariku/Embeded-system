@@ -1,9 +1,9 @@
-
-import methods.data.constants
+from methods import getters
+from methods.data import constants, init_variables
 def p_controller_speed_signal(set_LinVel):
     import testfile
     prop_error = set_LinVel - testfile.forward_velocity
-    out_signal = methods.data.constants.vKp * prop_error 
+    out_signal = constants.vKp * prop_error 
     final_signal = set_LinVel+out_signal
     if (final_signal >0.22):
         final_signal  = 0.215
