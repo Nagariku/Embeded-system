@@ -23,6 +23,22 @@ from sympy import symbols, Matrix
 from filterpy.stats import plot_covariance_ellipse
 from math import sqrt, tan, cos, sin, atan2
 
+from filterpy.kalman import ExtendedKalmanFilter as EKF
+from numpy import array, sqrt
+from numpy.random import randn
+import numpy as np
+import sympy
+from sympy.abc import x, y, theta,delta,phi
+from sympy import symbols, Matrix
+from math import atan2
+import matplotlib.pyplot as plt
+import sympy
+from sympy.abc import x, y, theta,delta,phi
+from sympy import symbols, Matrix
+from filterpy.stats import plot_covariance_ellipse
+from math import sqrt, tan, cos, sin, atan2
+import matplotlib.pyplot as plt
+
 
 #coordinates are [x,y] or [x,y,theta]
 #x and y are in meters
@@ -574,7 +590,7 @@ class RobotEKF(EKF):
                            [phi]])
         return x + dx
   
-def run_localization(step=30, ellipse_step=60):
+def run_localization(std_range, std_bearing,step=30, ellipse_step=60, ):
     global sim_pos
     sim_pos = ekf.move(sim_pos, u, dt) # simulate robot
     track.append(sim_pos)
@@ -588,7 +604,10 @@ def run_localization(step=30, ellipse_step=60):
                     std=6, facecolor='k', alpha=0.3)
 
         x, y = sim_pos[0, 0], sim_pos[1, 0] ###test commenting out
-
+        for lmark in landmarks:
+                z = z_landmark(lmark, sim_pos,
+                               std_range, std_bearing)
+                ekf_update(ekf, z, lmark)
 
         if i % ellipse_step == 0: ###test commenting out
             plot_covariance_ellipse( ###test commenting out 
@@ -597,7 +616,7 @@ def run_localization(step=30, ellipse_step=60):
     
     return ekf
 
-def kalman_initiation(std_dist, std_head, 
+def kalman_initiation(landmarks,std_dist, std_head, 
                      std_range, std_bearing,
                      step=10, ellipse_step=20):
     global sim_pos
@@ -611,21 +630,41 @@ def kalman_initiation(std_dist, std_head,
     
     return  outEkf
 
-def kalman_plot(inTrack, ylim=None):
+def kalman_plot(landmarks,inTrack, ylim=None):
 
     track = np.array(inTrack)
     plt.plot(track[:, 0], track[:,1], color='k', lw=2)
+    plt.scatter(landmarks[:, 0], landmarks[:, 1],
+                marker='s', s=60)
     plt.axis('equal')
     plt.title("EKF Robot localization")
     if ylim is not None: plt.ylim(*ylim)
     plt.show()
     return None
 
+#do by closest to furtherest
+def z_landmark(lmark, sim_pos, std_rng, std_brg):
+    x, y = sim_pos[0, 0], sim_pos[1, 0]
+    d = np.sqrt((lmark[0] - x)**2 + (lmark[1] - y)**2)  
+    a = atan2(lmark[1] - y, lmark[0] - x) - sim_pos[2, 0]
+    z = np.array([[d + randn()*std_rng],
+                  [a + randn()*std_brg]])
+    return z
 
+def ekf_update(ekf, z, landmark):
+    ekf.update(z, HJacobian=H_of, Hx=Hx, 
+               residual=residual,
+               args=(landmark), hx_args=(landmark))
 
+def residual(a, b):
+    """ compute residual (a-b) between measurements containing 
+    [range, bearing]. Bearing is normalized to [-pi, pi)"""
+    y = a - b
+    y[1] = y[1] % (2 * np.pi)    # force in range [0, 2 pi)
+    if y[1] > np.pi:             # move to [-pi, pi)
+        y[1] -= 2 * np.pi
+    return y
 
-ekf = run_localization(std_dist=0.1, std_head=np.radians(1), std_range=0.3, std_bearing=0.1)
-print('Final P:', ekf.P.diagonal())
 ######################################
 ###Initialising variables
 ##aka don't touch these or program won't work
@@ -724,13 +763,15 @@ MIMO_in_1_1_velocity = 0.05 #m/s
 ###Kalman stuff
 dt = 1.0
 track = []
-
+landmarks = array([[-1, -1], [-1, 2], [3, 2], [3,-1]])
+std_range= 0.03
+std_bearing = 0.03
 ######################
 ### Main program
 
 # get data start 
 plt.figure()
-ekf = kalman_initiation(std_dist=0.01, std_head=np.radians(1), std_range=0.03, std_bearing=0.01)
+ekf = kalman_initiation(landmarks,std_range, std_bearing,std_dist=0.01, std_head=np.radians(1) )
 refTickLeft, refTickRight , timeFromStart = get_data_from_sensors()
 
 ###loop
@@ -758,7 +799,7 @@ while robotRunning:
         #PASTE HERE
         ekf.dt = timeChange_2lastUpdates
         u = array([forward_velocity, theta]) 
-        run_localization()
+        run_localization(std_range, std_bearing)
 
         globalLoopCounter += 1
 
@@ -789,4 +830,4 @@ tb.stop()
         
 ###outputs when out of loop, can be commented out
 show_output_results()
-kalman_plot(track,ylim=(-5,5))
+kalman_plot(landmarks,track,ylim=(-5,5))
