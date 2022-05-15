@@ -14,6 +14,15 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import make_interp_spline
 import pandas as pd
 import json
+from filterpy.kalman import ExtendedKalmanFilter as EKF
+from numpy.random import randn
+from numpy import array, sqrt
+import sympy
+from sympy.abc import x, y, theta,delta,phi
+from sympy import symbols, Matrix
+from filterpy.stats import plot_covariance_ellipse
+from math import sqrt, tan, cos, sin, atan2
+
 
 #coordinates are [x,y] or [x,y,theta]
 #x and y are in meters
@@ -22,6 +31,7 @@ import json
 
 #test
 #p_controller_theta_travelled_angle_velocity_signal with higher speeds
+#resolution is 4092 ticks per rev
 
 ###Getters
 def get_data_from_sensors():
@@ -514,6 +524,108 @@ def show_output_results():
     ouput_plot(abscissaList, ordinateList2)
     return None
 
+###Kalman
+class RobotEKF(EKF):
+    def __init__(self, dt, std_dist, std_head):
+        EKF.__init__(self, 3, 2, 2)
+        self.dt = dt
+        self.std_dist = std_dist
+        self.std_head = std_head
+
+        x, y, theta, delta, phi, w, time = symbols(
+            'x, y, theta, delta, phi, w, t')
+    
+        self.fxu =  Matrix([[x+ delta*sympy.cos(theta+phi)],
+              [y+delta*sympy.sin(theta+phi)],
+              [theta+phi]])
+
+        self.F_j = self.fxu.jacobian(Matrix([x, y, theta]))
+        self.B_j = self.fxu.jacobian(Matrix([delta,phi ]))
+
+        # save dictionary and it's variables for later use
+        self.subs = {x: 0, y: 0, theta:0, delta:0, 
+                     time:dt, phi:0}
+        self.x_x, self.x_y, = x, y 
+        self.delta, self.phi, self.theta = delta, phi, theta
+
+    def predict(self, u):
+        self.x = self.move(self.x, u, self.dt)
+
+        self.subs[self.theta] = self.x[2, 0]
+        self.subs[self.delta] = u[0]
+        self.subs[self.phi] = u[1]
+
+        F = array(self.F_j.evalf(subs=self.subs)).astype(float)
+        B = array(self.B_j.evalf(subs=self.subs)).astype(float)
+
+        # covariance of motion noise in control space
+        G = array([[self.std_dist*u[0]**2, 0], 
+                   [0, self.std_head**2]])
+
+        self.P = np.dot(F, self.P).dot(F.T) + np.dot(B, G).dot(B.T)
+
+    def move(self, x, u, dt):
+        hdg = x[2, 0]
+        dist = u[0]*dt
+        phi = u[1]*dt
+
+        dx = np.array([[dist*cos(hdg+phi)], 
+                           [dist*sin(hdg+phi)], 
+                           [phi]])
+        return x + dx
+  
+def run_localization(step=30, ellipse_step=60):
+    global sim_pos
+    sim_pos = ekf.move(sim_pos, u, dt) # simulate robot
+    track.append(sim_pos)
+
+    if globalLoopCounter % step == 0: #Only run every 10 steps (= 1 sec.)
+        ekf.predict(u=u)
+
+        if i % ellipse_step == 0: #plot ellipse every 2 seconds (20 steps)
+            plot_covariance_ellipse(
+                (ekf.x[0,0], ekf.x[1,0]), ekf.P[0:2, 0:2], 
+                    std=6, facecolor='k', alpha=0.3)
+
+        x, y = sim_pos[0, 0], sim_pos[1, 0] ###test commenting out
+
+
+        if i % ellipse_step == 0: ###test commenting out
+            plot_covariance_ellipse( ###test commenting out 
+                    (ekf.x[0,0], ekf.x[1,0]), ekf.P[0:2, 0:2], ###test commenting out
+                    std=6, facecolor='g', alpha=0.8)###test commenting out
+    
+    return ekf
+
+def kalman_initiation(std_dist, std_head, 
+                     std_range, std_bearing,
+                     step=10, ellipse_step=20):
+    global sim_pos
+    outEkf = RobotEKF(dt, std_dist=std_dist,std_head=std_head)
+    
+    outEkf.x = array([[current_x, current_y, theta]]).T # Initial x, y, steer angle
+    outEkf.P = np.diag([0, 0, 0]) # The initial state uncertainty 
+    outEkf.R = np.diag([std_range**2, std_bearing**2]) # The measurement noise
+    sim_pos = outEkf.x.copy() # simulated position
+
+    
+    return  outEkf
+
+def kalman_plot(inTrack, ylim=None):
+
+    track = np.array(inTrack)
+    plt.plot(track[:, 0], track[:,1], color='k', lw=2)
+    plt.axis('equal')
+    plt.title("EKF Robot localization")
+    if ylim is not None: plt.ylim(*ylim)
+    plt.show()
+    return None
+
+
+
+
+ekf = run_localization(std_dist=0.1, std_head=np.radians(1), std_range=0.3, std_bearing=0.1)
+print('Final P:', ekf.P.diagonal())
 ######################################
 ###Initialising variables
 ##aka don't touch these or program won't work
@@ -609,10 +721,16 @@ MIMO_in_1_1_list =[[0,1],[2,1],[0,0]]
 MIMO_in_1_1_sensetivity = 0.05 #m
 MIMO_in_1_1_velocity = 0.05 #m/s
 
+###Kalman stuff
+dt = 1.0
+track = []
+
 ######################
 ### Main program
 
 # get data start 
+plt.figure()
+ekf = kalman_initiation(std_dist=0.01, std_head=np.radians(1), std_range=0.03, std_bearing=0.01)
 refTickLeft, refTickRight , timeFromStart = get_data_from_sensors()
 
 ###loop
@@ -638,9 +756,17 @@ while robotRunning:
         #current function being completed
 
         #PASTE HERE
+        ekf.dt = timeChange_2lastUpdates
+        u = array([forward_velocity, theta]) 
+        run_localization()
+
+        globalLoopCounter += 1
+
+        
+    
     
 
-    if globalLoopCounter % 500 == 0:
+    if globalLoopCounter % 34 == 0: # every second
         print("\nLinear velocity: ", str(round(forward_velocity, 5)))
         print("Angular velicity: ", str(round(angular_velocity, 5)))
         print("Angle: ", str(round(theta/2/np.pi*360, 5)))
@@ -658,8 +784,9 @@ while robotRunning:
     #PASTE TURN OFFS HERE    
 
 
-    globalLoopCounter += 1
+    
 tb.stop()
         
 ###outputs when out of loop, can be commented out
 show_output_results()
+kalman_plot(track,ylim=(-5,5))
