@@ -46,10 +46,10 @@ def get_data_to_list(listToSave):
                     angular_velCalc (float) Current angular velocity of robot   
     '''    
 
-    global timeChange_2lastUpdates, timeTickUpdate_bool
+    global timeChange_2lastUpdates, timeTickUpdate_bool, timeFromStart
 
     timeCurrent = time.time()   
-    timeFromStart = timeCurrent - timeatStart 
+    timeFromStart = timeCurrent - timeFromStart 
   
     timeFromStartArray.append(timeFromStart)
     timeFromStartArray.pop(0)
@@ -423,8 +423,8 @@ def reach_coordinates_and_angle(inputCoordList, constVel, distanceBehindPoint, i
         listOfSeqCoords=[]
         for i in range(0,inputNumPoints+1,1):
             distanceBehind_itterative = distanceBehindPoint - i*distSplit
-            listOfSeqCoord.append(get_coordinates_behind_point_angle(inputCoordList, distanceBehind_itterative))
-    if (get_distance_to_coordinate(listOfSeqCoord[0])<sensetivityDist): #check if distance is close enough
+            listOfSeqCoords.append(get_coordinates_behind_point_angle(inputCoordList, distanceBehind_itterative))
+    if (get_distance_to_coordinate(listOfSeqCoords[0])<sensetivityDist): #check if distance is close enough
         listOfSeqCoords.pop(0)
         if (len(listOfSeqCoords)>0): #check if there is next coordinator
             currentCoordTargetSISO = listOfSeqCoords[0]
