@@ -21,24 +21,7 @@ import sympy
 from sympy.abc import x, y, theta,delta,phi
 from sympy import symbols, Matrix
 from filterpy.stats import plot_covariance_ellipse
-from math import sqrt, tan, cos, sin, atan2
-
-from filterpy.kalman import ExtendedKalmanFilter as EKF
-from numpy import array, sqrt
-from numpy.random import randn
-import numpy as np
-import sympy
-from sympy.abc import x, y, theta,delta,phi
-from sympy import symbols, Matrix
-from math import atan2
-import matplotlib.pyplot as plt
-import sympy
-from sympy.abc import x, y, theta,delta,phi
-from sympy import symbols, Matrix
-from filterpy.stats import plot_covariance_ellipse
-from math import sqrt, tan, cos, sin, atan2
-import matplotlib.pyplot as plt
-
+from math import tan, cos, sin, atan2
 
 #coordinates are [x,y] or [x,y,theta]
 #x and y are in meters
@@ -51,6 +34,7 @@ import matplotlib.pyplot as plt
 
 ###Getters
 def get_data_from_sensors():
+    global timeatStart
     returnedList =[]
     timeatStart = time.time()
     returnedList = get_data_to_list(returnedList)
@@ -344,7 +328,7 @@ def p_controller_speed_signalExp(set_LinVel):
     errorDerivative = (prop_error - vLastErr)/timeChange_2lastUpdates
     vErrAverage = sum(vErrorList)/len(vErrorList)
     vErrSum = vErrAverage * sum(vTimeDifferences)
-    global_velocity_signal = vKp * prop_error + vKi * vErrAverage +  vKd* errorDerivative
+    global_velocity_signal = vKp * prop_error + vKi * vErrSum +  vKd* errorDerivative
 
     #set up variables for next time
     vErrorList.pop(0)
@@ -449,8 +433,8 @@ def reach_coordinates_and_angle(inputCoordList, constVel, distanceBehindPoint, i
         listOfSeqCoords=[]
         for i in range(0,inputNumPoints+1,1):
             distanceBehind_itterative = distanceBehindPoint - i*distSplit
-            listOfSeqCoord.append(get_coordinates_behind_point_angle(inputCoordList, distanceBehind_itterative))
-    if (get_distance_to_coordinate(listOfSeqCoord[0])<sensetivityDist): #check if distance is close enough
+            listOfSeqCoords.append(get_coordinates_behind_point_angle(inputCoordList, distanceBehind_itterative))
+    if (get_distance_to_coordinate(listOfSeqCoords[0])<sensetivityDist): #check if distance is close enough
         listOfSeqCoords.pop(0)
         if (len(listOfSeqCoords)>0): #check if there is next coordinator
             currentCoordTargetSISO = listOfSeqCoords[0]
@@ -641,6 +625,32 @@ def kalman_plot(landmarks,inTrack, ylim=None):
     if ylim is not None: plt.ylim(*ylim)
     plt.show()
     return None
+
+def H_of(x, landmark_pos):
+    """ compute Jacobian of H matrix where h(x) computes 
+    the range and bearing to a landmark for state x """
+
+    px = landmark_pos[0]
+    py = landmark_pos[1]
+    hyp = (px - x[0, 0])**2 + (py - x[1, 0])**2
+    dist = sqrt(hyp)
+
+    H = array(
+        [[-(px - x[0, 0]) / dist, -(py - x[1, 0]) / dist, 0],
+         [ (py - x[1, 0]) / hyp,  -(px - x[0, 0]) / hyp, -1]])
+    return H
+
+def Hx(x, landmark_pos):
+    """ takes a state variable and returns the measurement
+    that would correspond to that state.
+    """
+    px = landmark_pos[0]
+    py = landmark_pos[1]
+    dist = sqrt((px - x[0, 0])**2 + (py - x[1, 0])**2)
+
+    Hx = array([[dist],
+                [atan2(py - x[1, 0], px - x[0, 0]) - x[2, 0]]])
+    return Hx
 
 #do by closest to furtherest
 def z_landmark(lmark, sim_pos, std_rng, std_brg):
