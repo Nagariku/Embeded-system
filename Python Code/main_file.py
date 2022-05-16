@@ -25,9 +25,7 @@ import json
 
 ###Getters
 def get_data_from_sensors():
-    global timeatStart
     returnedList =[]
-    timeatStart = time.time()
     returnedList = get_data_to_list(returnedList)
     dataList = returnedList[0]
     outTimeCalc = returnedList[1] 
@@ -47,17 +45,20 @@ def get_data_to_list(listToSave):
                     angular_velCalc (float) Current angular velocity of robot   
     '''    
 
-    global timeChange_2lastUpdates, timeTickUpdate_bool, timeFromStart
+    global timeChange_2lastUpdates, timeTickUpdate_bool, timeAtStart
 
-    timeCurrent = time.time()   
-    timeFromStart = timeCurrent - timeatStart 
+    
+    timeCurrent = time.time()  
+    if (globalLoopCounter==1):
+        timeFromStart = 0
+    else:
+        timeFromStart = timeCurrent - timeAtStart 
   
     timeFromStartArray.append(timeFromStart)
     timeFromStartArray.pop(0)
     timeChange_2lastUpdates = timeFromStartArray[1]-timeFromStartArray[0]
 
     if (timeChange_2lastUpdates!=0):
-        print(" \nCONDITION MET")
         timeTickUpdate_bool = True
         DeadReckon_List_vel.append(forward_velocity)
         DeadReckon_List_theta.append(get_current_theta())
@@ -67,7 +68,10 @@ def get_data_to_list(listToSave):
         timeTickUpdate_bool = False
 
     listToSave.append(tb.get_encoder_ticks())
-    listToSave.append(timeFromStart)
+    if (globalLoopCounter==1):
+        listToSave.append(timeCurrent)
+    else:   
+        listToSave.append(timeFromStart)
     
     return listToSave
 
@@ -189,12 +193,15 @@ def update_current_linear_velocity():
                     linear_velCalc (float)Current forward velocity of robot   
     '''
     #update when time tick
-    if timeTickUpdate_bool == True:
-        velocityLeftWheel = get_tick_value_in_rad(leftTickCurrent - refTickLeft) * 0.0000066 * 0.5/timeChange_2lastUpdates #0.066
-        velocityRightWheel = get_tick_value_in_rad(rightTickCurrent - refTickRight) * 0.0000066 * 0.5/timeChange_2lastUpdates
-        linear_velCalc = (velocityRightWheel + velocityLeftWheel)/2
-    else:
-        linear_velCalc =  0
+    global prevTickLeft,prevTickRight
+    velocityLeftWheel = get_tick_value_in_rad(leftTickCurrent - prevTickLeft) * 0.066 * 0.5/timeChange_2lastUpdates #0.066
+    velocityRightWheel = get_tick_value_in_rad(rightTickCurrent - prevTickRight) * 0.066 * 0.5/timeChange_2lastUpdates
+    #print (velocityLeftWheel,velocityRightWheel)
+    linear_velCalc = (velocityRightWheel + velocityLeftWheel)/2
+    prevTickLeft = leftTickCurrent
+    prevTickRight = rightTickCurrent
+    if (linear_velCalc > 0.3 or linear_velCalc <0):
+        return -forward_velocity
     return linear_velCalc
 
 def update_current_angular_velocity():
@@ -208,12 +215,10 @@ def update_current_angular_velocity():
             Returns:
                     angular_velCalc (float) Current angular velocity of robot   
     '''    
-    if timeFromStart != 0:
+    if (timeTickUpdate_bool == True):
         velocityLeftWheel = get_tick_value_in_rad(leftTickCurrent - refTickLeft) * 0.066 * 0.5/timeChange_2lastUpdates
         velocityRightWheel = get_tick_value_in_rad(rightTickCurrent - refTickRight) * 0.066 * 0.5/timeChange_2lastUpdates
         angular_velCalc = (velocityRightWheel-velocityLeftWheel)/0.16 
-    else:
-        angular_velCalc = 0
     return angular_velCalc
 
 def update_distance_travelled():
@@ -273,10 +278,10 @@ def p_controller_angle_signal(set_angle):
     else:
         smallOpposite = set_angle + np.pi
         if (theta>set_angle and theta<smallOpposite):
-            turnRight = -1
+            turnRight =-1 #-1
         else:
-            turnRight= 1
-
+            turnRight= 1#1
+    
     if prop_error > np.pi:
         correct_prop_error = np.pi*2-prop_error
     elif (prop_error < -np.pi):
@@ -285,7 +290,7 @@ def p_controller_angle_signal(set_angle):
         correct_prop_error =  -prop_error
     else:
         correct_prop_error = prop_error
-
+    print (correct_prop_error, prop_error)
     out_signal = aKp * correct_prop_error 
     if (out_signal>2.7):
         out_signal = 2.65 
@@ -331,17 +336,20 @@ def p_controller_speed_signalExp(set_LinVel):
     vErrorList.append(prop_error)
     vTimeDifferences.pop(0)
     vTimeDifferences.append(timeChange_2lastUpdates)
+    
 
     #outputting the stuff
     if (global_velocity_signal >0.22):
         global_velocity_signal  = 0.215
     elif (global_velocity_signal <-0.22):
         global_velocity_signal  = -0.215
+
     return global_velocity_signal
 
 def p_controller_angle_signalExp(set_angle):
     #calculate error
     prop_error = set_angle - theta
+
 
     if (prop_error ==0 or np.pi):
         turnRight = 1
@@ -355,19 +363,19 @@ def p_controller_angle_signalExp(set_angle):
     else:
         smallOpposite = set_angle + np.pi
         if (theta>set_angle and theta<smallOpposite):
-            turnRight = -1
+            turnRight =1 #-1
         else:
-            turnRight= 1
+            turnRight=- 1
 
     if prop_error > np.pi:
         correct_prop_error = np.pi*2-prop_error
     elif (prop_error < -np.pi):
         correct_prop_error =  2*np.pi+prop_error
-    elif (prop_error < 0):
-        correct_prop_error =  -prop_error
+    #elif (prop_error < 0):
+       # correct_prop_error =  -prop_error
     else:
         correct_prop_error = prop_error
-
+    print (correct_prop_error,prop_error)
     #reset 2 lists on reach
 
     #calculate signal
@@ -385,10 +393,10 @@ def p_controller_angle_signalExp(set_angle):
     aTimeDifferences.append(timeChange_2lastUpdates)
 
     #outputting stuff
-    if (out_signal>2.7):
-        out_signal = 2.65 
-    elif (out_signal<-2.75):
-        out_signal = -2.65 
+    if (out_signal>2.5):
+        out_signal = 2 
+    elif (out_signal<-2.5):
+        out_signal = -2 
     direct_adj_signal = out_signal*turnRight
     return direct_adj_signal
 
@@ -399,8 +407,8 @@ def reach_forward_speed(inputForwVel):
     return None
 
 def reach_correct_angle_0_forward_vel(set_angle):
-    tb.set_control_inputs(0, p_controller_angle_signal(set_angle)) # set control input {lin-vel: 0, ang-vel: out_signal}
-    #tb.set_control_inputs(0, p_controller_angle_signalExp(set_angle)) # set control input {lin-vel: 0, ang-vel: out_signal}
+    #tb.set_control_inputs(0, p_controller_angle_signal(set_angle)) # set control input {lin-vel: 0, ang-vel: out_signal}
+    tb.set_control_inputs(0, p_controller_angle_signalExp(set_angle)) # set control input {lin-vel: 0, ang-vel: out_signal}
     return None
 
 def reach_theta_travelled_0_forward_vel(total_theta_wanted):
@@ -413,9 +421,9 @@ def reach_distance_0_angular_vel(inputDistance):
 
 def reach_coordinates_constantVelocity(inputCoordList,constSpeed):
     desired_angle_func = get_perfect_angle_to_next_coord_from_current_position(inputCoordList)
-    theta_output = p_controller_angle_signal(desired_angle_func)
-    #theta_output = p_controller_angle_signalExp(desired_angle_func)
-    velocity_output = p_controller_speed_signal(constSpeed)
+    #theta_output = p_controller_angle_signal(desired_angle_func)
+    theta_output = p_controller_angle_signalExp(desired_angle_func)
+    #velocity_output = p_controller_speed_signal(constSpeed)
     velocity_output = p_controller_speed_signalExp(constSpeed)
     tb.set_control_inputs(velocity_output, theta_output) # set control input {lin-vel: 0, ang-vel: out_signal}
     return None
@@ -535,7 +543,7 @@ timeTickUpdate_bool = False
 timeFromStartArray = [0,0]
 DeadReckon_List_theta = [0,0]
 DeadReckon_List_vel = [0,0]
-current_target=[0,0]
+current_target=[1,1]
 
 #Graph plotting CORY
 IMUList = []
@@ -569,16 +577,16 @@ sensetivityDist = 0.05
 
 #PID controlls
 #velocity controlls
-vKp = 0.75
-vKi = 0
-vKd = 0.
+vKp = 1.2
+vKi = 2.85
+vKd = 0.126
 vErrorList = [0,0,0,0] #each zero = 0.045sec
 vTimeDifferences = [0,0,0,0] #each zero = 0.045sec
 
 #angular controls
 aKp = 0.6 #0.35
-aKi = 2.85
-aKd = 0.126
+aKi = 0#2.85
+aKd = 0#0.126
 aErrorList = [0,0,0,0] #each zero = 0.045sec
 aTimeDifferences = [0,0,0,0] #each zero = 0.045sec
 
@@ -621,7 +629,9 @@ MIMO_in_1_1_velocity = 0.05 #m/s
 ### Main program
 
 # get data start 
-refTickLeft, refTickRight , timeFromStart = get_data_from_sensors()
+refTickLeft, refTickRight , timeAtStart = get_data_from_sensors()
+prevTickLeft = refTickLeft
+prevTickRight= refTickRight
 
 ###loop
 while robotRunning:
@@ -644,7 +654,9 @@ while robotRunning:
         update_graph_data()
 
         #current function being completed
-        reach_forward_speed(0.05)
+        #reach_forward_speed(0.05)
+        #reach_correct_angle_0_forward_vel(np.pi)
+        reach_coordinates_constantVelocity(SISO_in_1_3_list,SISO_in_1_3_velocity)
         #PASTE HERE
     
     
@@ -658,16 +670,18 @@ while robotRunning:
         print("distance to target", get_distance_to_coordinate(current_target))
         print("total distance travelled", str(round(distance_travelled,5)))
         print("total angular displacement", str(round(angle_total,5)))
+        print(global_velocity_signal)
     
     #basic turn off    
-    if timeFromStart > 20:
+    if (timeFromStart > 20 and globalLoopCounter!=1):
         robotRunning = False
 
     #PASTE TURN OFFS HERE    
-
+    if (get_distance_to_coordinate(SISO_in_1_3_list)<sensetivityDist):
+        robotRunning = False 
 
     globalLoopCounter += 1
 tb.stop()
         
 ###outputs when out of loop, can be commented out
-show_output_results()
+#show_output_results()
