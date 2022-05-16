@@ -165,6 +165,7 @@ def get_coordinates_behind_point_angle(inputCoordListAngle,distanceBehind):
 def get_nearest_object():
     """
     Works
+    Determines using the LIDAR where the nearest object is
     """
     data = tb.get_scan()
     data = json.loads(data) # converts string into dictionnary
@@ -247,7 +248,7 @@ def update_yposition():
     return current_yCalc, outChange_y
 
 def update_graph_data():
-    IMUList.append(tb.get_imu())
+    # IMUList.append(tb.get_imu())
     abscissaList.append(timeFromStart)
     ordinateList.append(distance_to_wall)
     nearestObject = get_nearest_object() # distance between the robot and nearest object detected. The scan is used
@@ -488,9 +489,10 @@ def reach_following_coordinates(inCoordinateList,inSpeedUsed,sensetivityUsed):
     return currentCoordTargetMIMO
 
 ###Graph plotting
-def ouput_plot(abscissaList, ordinateList):
+def ouput_plot(abscissaList, ordinateList, aLegend):
     """    
     Works
+    
     """
     abscissaList = np.asarray(abscissaList)
     ordinateList = np.asarray(ordinateList)
@@ -503,6 +505,7 @@ def ouput_plot(abscissaList, ordinateList):
     plt.xlabel('Time (s)') #set the label for x-axis
     plt.title("Wall proximity") #set the title of the graph
     plt.grid()
+    plt.legend(aLegend)
     plt.show() #display the graph
 
 def save_to_csv(listToSave, csvName):
@@ -516,6 +519,7 @@ def save_to_csv(listToSave, csvName):
     np.savetxt(name, listToSave, delimiter =", ", fmt ='% s')
 
 def show_output_results():
+    # Saves data to csv
     saveThis = []
     saveThis.append(abscissaList)
     saveThis.append(ordinateList)      
@@ -524,8 +528,8 @@ def show_output_results():
     save_to_csv(saveThis, csvName)
 
     # Plotting the data
-    ouput_plot(abscissaList, ordinateList)
-    ouput_plot(abscissaList, ordinateList2)
+    ouput_plot(abscissaList, ordinateList, legend1)
+    ouput_plot(abscissaList, ordinateList2, legend2)
     return None
 
 ######################################
@@ -546,8 +550,10 @@ DeadReckon_List_vel = [0,0]
 current_target=[1,1]
 
 #Graph plotting CORY
-IMUList = []
-abscissaList = [] # for plotting graph
+# IMUList = []
+legend1 = ["From Ticks"]
+legend2 = ["From LIDAR"]
+abscissaList = [] # for plotting graph, the time since start
 ordinateList = [] # for plotting graph
 ordinateList2 = [] # for plotting graph
 
@@ -681,6 +687,7 @@ while robotRunning:
         robotRunning = False 
 
     globalLoopCounter += 1
+    
 tb.stop()
         
 ###outputs when out of loop, can be commented out
