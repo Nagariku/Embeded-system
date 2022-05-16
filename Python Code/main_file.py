@@ -319,7 +319,7 @@ def p_controller_speed_signalExp(set_LinVel):
     errorDerivative = (prop_error - vLastErr)/timeChange_2lastUpdates
     vErrAverage = sum(vErrorList)/len(vErrorList)
     vErrSum = vErrAverage * sum(vTimeDifferences)
-    global_velocity_signal = vKp * prop_error + vKi * vErrAverage +  vKd* errorDerivative
+    global_velocity_signal = vKp * prop_error + vKi * vErrSum +  vKd* errorDerivative
 
     #set up variables for next time
     vErrorList.pop(0)
