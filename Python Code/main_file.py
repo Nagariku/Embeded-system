@@ -25,6 +25,7 @@ import json
 
 ###Getters
 def get_data_from_sensors():
+    global timeatStart
     returnedList =[]
     timeatStart = time.time()
     returnedList = get_data_to_list(returnedList)
@@ -49,7 +50,7 @@ def get_data_to_list(listToSave):
     global timeChange_2lastUpdates, timeTickUpdate_bool, timeFromStart
 
     timeCurrent = time.time()   
-    timeFromStart = timeCurrent - timeFromStart 
+    timeFromStart = timeCurrent - timeatStart 
   
     timeFromStartArray.append(timeFromStart)
     timeFromStartArray.pop(0)
