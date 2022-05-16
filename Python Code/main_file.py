@@ -57,6 +57,7 @@ def get_data_to_list(listToSave):
     timeChange_2lastUpdates = timeFromStartArray[1]-timeFromStartArray[0]
 
     if (timeChange_2lastUpdates!=0):
+        print(" \nCONDITION MET")
         timeTickUpdate_bool = True
         DeadReckon_List_vel.append(forward_velocity)
         DeadReckon_List_theta.append(get_current_theta())
@@ -106,7 +107,7 @@ def get_deadreckon_v_and_angle_averages():
     #correction to prevent negative angle fuckery
     averageSpeed = (DeadReckon_List_vel[1]+DeadReckon_List_vel[0])/2
     averageTheta = (DeadReckon_List_theta[1] + DeadReckon_List_theta[0])/2
-    if ((max(averageTheta)-min(averageTheta))>1):
+    if ((max(DeadReckon_List_theta)-min(DeadReckon_List_theta))>1):
         biggerTheta = -2*np.pi+max(DeadReckon_List_theta)
         smallerTheta = min(DeadReckon_List_theta)
         averageTheta = (biggerTheta + smallerTheta)/2
@@ -188,10 +189,12 @@ def update_current_linear_velocity():
                     linear_velCalc (float)Current forward velocity of robot   
     '''
     #update when time tick
-    if timeFromStart != 0:
-        velocityLeftWheel = get_tick_value_in_rad(leftTickCurrent - refTickLeft) * 0.066 * 0.5/timeChange_2lastUpdates
-        velocityRightWheel = get_tick_value_in_rad(rightTickCurrent - refTickRight) * 0.066 * 0.5/timeChange_2lastUpdates
-        linear_velCalc = (velocityRightWheel + velocityLeftWheel)/2 
+    if timeTickUpdate_bool == True:
+        velocityLeftWheel = get_tick_value_in_rad(leftTickCurrent - refTickLeft) * 0.0000066 * 0.5/timeChange_2lastUpdates #0.066
+        velocityRightWheel = get_tick_value_in_rad(rightTickCurrent - refTickRight) * 0.0000066 * 0.5/timeChange_2lastUpdates
+        linear_velCalc = (velocityRightWheel + velocityLeftWheel)/2
+    else:
+        linear_velCalc =  0
     return linear_velCalc
 
 def update_current_angular_velocity():
@@ -209,6 +212,8 @@ def update_current_angular_velocity():
         velocityLeftWheel = get_tick_value_in_rad(leftTickCurrent - refTickLeft) * 0.066 * 0.5/timeChange_2lastUpdates
         velocityRightWheel = get_tick_value_in_rad(rightTickCurrent - refTickRight) * 0.066 * 0.5/timeChange_2lastUpdates
         angular_velCalc = (velocityRightWheel-velocityLeftWheel)/0.16 
+    else:
+        angular_velCalc = 0
     return angular_velCalc
 
 def update_distance_travelled():
@@ -389,8 +394,8 @@ def p_controller_angle_signalExp(set_angle):
 
 ###Calculations and actuators
 def reach_forward_speed(inputForwVel):
-    tb.set_control_inputs(p_controller_speed_signal(inputForwVel), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
-    #tb.set_control_inputs(p_controller_speed_signalExp(inputForwVel), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
+    #tb.set_control_inputs(p_controller_speed_signal(inputForwVel), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
+    tb.set_control_inputs(p_controller_speed_signalExp(inputForwVel), 0) # set control input {lin-vel: 0, ang-vel: out_signal}
     return None
 
 def reach_correct_angle_0_forward_vel(set_angle):
@@ -546,6 +551,8 @@ refTickRight = 0 #was None before
 #floats     
 current_x = 0
 current_y = 0
+change_x=0
+change_y=0
 theta = 0
 distance_travelled = 0
 angle_total = 0
@@ -563,17 +570,17 @@ sensetivityDist = 0.05
 #PID controlls
 #velocity controlls
 vKp = 0.75
-vKi = 2.85
-vKd = 0.126
-vErrorList = np.zeros(4) #each zero = 0.045sec
-vTimeDifferences = np.zeros(4) #each zero = 0.045sec
+vKi = 0
+vKd = 0.
+vErrorList = [0,0,0,0] #each zero = 0.045sec
+vTimeDifferences = [0,0,0,0] #each zero = 0.045sec
 
 #angular controls
 aKp = 0.6 #0.35
 aKi = 2.85
 aKd = 0.126
-aErrorList = np.zeros(4) #each zero = 0.045sec
-aTimeDifferences = np.zeros(4) #each zero = 0.045sec
+aErrorList = [0,0,0,0] #each zero = 0.045sec
+aTimeDifferences = [0,0,0,0] #each zero = 0.045sec
 
 #distance travelled controls
 dKp = 0.1
@@ -637,10 +644,10 @@ while robotRunning:
         update_graph_data()
 
         #current function being completed
-
+        reach_forward_speed(0.05)
         #PASTE HERE
     
-
+    
     if globalLoopCounter % 500 == 0:
         print("\nLinear velocity: ", str(round(forward_velocity, 5)))
         print("Angular velicity: ", str(round(angular_velocity, 5)))
@@ -651,7 +658,7 @@ while robotRunning:
         print("distance to target", get_distance_to_coordinate(current_target))
         print("total distance travelled", str(round(distance_travelled,5)))
         print("total angular displacement", str(round(angle_total,5)))
-         
+    
     #basic turn off    
     if timeFromStart > 20:
         robotRunning = False
