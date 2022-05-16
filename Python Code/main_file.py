@@ -579,6 +579,7 @@ def run_localization(std_range, std_bearing,step=30, ellipse_step=60, ):
     sim_pos = ekf.move(sim_pos, u, dt) # simulate robot
     track.append(sim_pos)
 
+    # for i in range(200):
     if globalLoopCounter % step == 0: #Only run every 10 steps (= 1 sec.)
         ekf.predict(u=u)
 
