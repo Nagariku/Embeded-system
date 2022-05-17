@@ -17,6 +17,26 @@ Corentin:
 Limitation of current controller: cannot move linearly and turn simultaneously (see def reach_correct_speed(set_LinVel) and other)
 """
 
+"""
+TIMES, used and definition:
+    -timeDif:
+        = time2 - time1. Time passed since the robot was started
+        
+    -time2: 
+        time at each iteration of the while loop, when the data from the sensors are imported
+        
+    -time1: 
+        time when starting the robot
+        
+    -timeDif2: 
+        difference between previous and the current timeDif
+        gives the time difference between current time and the time of previous reading
+    
+    -timeDifArray:
+        list containing the previous and the current timeDif
+    
+"""
+
 from distutils.log import error
 import time
 from rolab_tb.turtlebot import Turtlebot
@@ -45,8 +65,8 @@ def tick_to_rad(val):
 
 def get_linear_velocity():
     if timeDif != 0:
-        vl = tick_to_rad(leftTick - refTickLeft) * 0.066 * 0.5/timeDif
-        vr = tick_to_rad(rightTick - refTickRight) * 0.066 * 0.5/timeDif
+        vl = tick_to_rad(leftTick - refTickLeft) * 0.066 * 0.5/timeDif2
+        vr = tick_to_rad(rightTick - refTickRight) * 0.066 * 0.5/timeDif2
         linear_vel = (vr + vl)/2 
     else:
         linear_vel = 0
@@ -55,8 +75,8 @@ def get_linear_velocity():
 def get_angular_velocity():
     if timeDif != 0:
         
-        vl = tick_to_rad(leftTick - refTickLeft) * 0.066 * 0.5/timeDif
-        vr = tick_to_rad(rightTick - refTickRight) * 0.066 * 0.5/timeDif
+        vl = tick_to_rad(leftTick - refTickLeft) * 0.066 * 0.5/timeDif2
+        vr = tick_to_rad(rightTick - refTickRight) * 0.066 * 0.5/timeDif2
         angu_vel = (vr-vl)/0.16 
     
     else:
