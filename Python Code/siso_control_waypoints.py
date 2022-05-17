@@ -195,6 +195,12 @@ def check_endgoal(latest_pose, goal_pose, goal_tolerance):
 
     return False
 
+def get_distance_to_coordinate(listCoordsInput):
+    delta_X=current_x - listCoordsInput[0]
+    delta_Y= current_y - listCoordsInput[1]
+    totalDistanceToCoord = np.sqrt(delta_Y**2+delta_X**2)
+    return totalDistanceToCoord
+
 def get_nearest_object():
     data = tbot.get_scan()
     data = json.loads(data) # converts string into dictionnary
@@ -259,6 +265,8 @@ def main():
 
         # check for goal, if reached, break out!
 
+        
+
         if check_endgoal(new_pose, WAYPOINTS[wpt_idx], GOAL_TOLERANCE):
             if wpt_idx == len(WAYPOINTS) - 1:
                 # make sure lists have same length
@@ -270,7 +278,10 @@ def main():
         # determine control inputs
         w_in = get_angvel_control_input_pid(d_res, WAYPOINTS[wpt_idx], tb_config)
         # keep constant linvel
-        v_in = d_res['l_control_linvel'][-1]
+        if get_distance_to_coordinate(WAYPOINTS[wpt_idx]<0.5):
+            v_in = d_res['l_control_linvel'][-1]/2
+        else:
+            v_in = d_res['l_control_linvel'][-1]/2
 
         d_res['l_control_linvel'].append(v_in)
         d_res['l_control_angvel'].append(w_in)
