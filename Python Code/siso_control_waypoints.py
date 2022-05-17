@@ -196,8 +196,8 @@ def check_endgoal(latest_pose, goal_pose, goal_tolerance):
     return False
 
 def get_distance_to_coordinate(listCoordsInput):
-    delta_X= new_pose[0] - listCoordsInput[0]
-    delta_Y= new_pose[1] - listCoordsInput[1]
+    delta_X= x_current - listCoordsInput[0]
+    delta_Y= y_current - listCoordsInput[1]
     totalDistanceToCoord = np.sqrt(delta_Y**2+delta_X**2)
     return totalDistanceToCoord
 
@@ -217,7 +217,7 @@ def get_nearest_object():
     return closest_ting
 
 def main():
-    global tbot, d_res
+    global tbot, d_res , x_current, y_current
 
     """ main function """
 
@@ -230,6 +230,8 @@ def main():
 
     d_res = initialise_result_vectors(d_res, INIT_POSE, INIT_CONTROL_IN,
                                       WAYPOINTS[0])
+    x_current = INIT_POSE[0]
+    y_current = INIT_POSE[1]
     tbot.set_control_inputs(d_res['l_control_linvel'][-1],
                             d_res['l_control_angvel'][-1])
     # tstart = time.time()
@@ -262,6 +264,8 @@ def main():
         d_res['l_odo_y'].append(new_pose[1])
         d_res['l_odo_th'].append(new_pose[2])
         lidarList.append(get_nearest_object())
+        x_current = d_res['l_odo_x']
+        y_current = d_res['l_odo_y']
 
         # check for goal, if reached, break out!
 
