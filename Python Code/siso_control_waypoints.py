@@ -196,8 +196,8 @@ def check_endgoal(latest_pose, goal_pose, goal_tolerance):
     return False
 
 def get_distance_to_coordinate(listCoordsInput):
-    delta_X=current_x - listCoordsInput[0]
-    delta_Y= current_y - listCoordsInput[1]
+    delta_X= new_pose[0] - listCoordsInput[0]
+    delta_Y= new_pose[1] - listCoordsInput[1]
     totalDistanceToCoord = np.sqrt(delta_Y**2+delta_X**2)
     return totalDistanceToCoord
 
