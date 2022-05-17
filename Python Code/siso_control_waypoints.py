@@ -281,7 +281,7 @@ def main():
         if get_distance_to_coordinate(WAYPOINTS[wpt_idx]<0.5):
             v_in = d_res['l_control_linvel'][-1]/2
         else:
-            v_in = d_res['l_control_linvel'][-1]/2
+            v_in = d_res['l_control_linvel'][-1]
 
         d_res['l_control_linvel'].append(v_in)
         d_res['l_control_angvel'].append(w_in)
